@@ -24,7 +24,6 @@ chrome-user-data
 *.swp
 *.swo
 
-packages/react-devtools-core/dist
 packages/react-devtools-extensions/chrome/build
 packages/react-devtools-extensions/chrome/*.crx
 packages/react-devtools-extensions/chrome/*.pem
@@ -37,3 +36,26 @@ packages/react-devtools-fusebox/dist
 packages/react-devtools-inline/dist
 packages/react-devtools-shell/dist
 packages/react-devtools-timeline/dist
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
