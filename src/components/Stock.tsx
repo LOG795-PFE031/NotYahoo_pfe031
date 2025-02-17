@@ -43,7 +43,6 @@ const Stock: React.FC = () => {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h1>Stock View</h1>
       <StockHistoryChart data={stockData} />
     </div>
   );
