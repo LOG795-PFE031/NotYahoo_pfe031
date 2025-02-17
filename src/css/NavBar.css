@@ -1,0 +1,117 @@
+.navbar {
+    display: flex;
+    align-items: center;
+    background-color: #2d2d2d;
+    padding: 10px 20px;
+    color: #fff;
+  }
+  
+  /* Three sections: left, center, right */
+  .navbar__left {
+    flex: 0 0 auto; /* Logo doesn't grow */
+  }
+  
+  .navbar__center {
+    flex: 1 1 auto; /* Center can grow/shrink */
+    display: flex;
+    justify-content: center; /* Keep the search form centered */
+  }
+  
+  .navbar__right {
+    flex: 0 0 auto; /* Right items do not grow */
+    display: flex;
+    gap: 20px;      /* Space between links */
+    margin-left: 20px;
+  }
+  
+  /* LOGO */
+  .navbar__logo {
+    height: 40px;
+    width: auto;
+  }
+  
+  /* SEARCH FORM */
+  .search-form {
+    display: flex;
+    align-items: center;
+    /* Limit max width so it doesn't push the nav off the screen */
+    max-width: 400px;
+    width: 100%;
+  }
+  
+  .search-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px 0 0 4px;
+    font-size: 16px;
+  }
+  
+  .search-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 0 4px 4px 0;
+    background-color: #0066cc;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  /* NAV LINKS */
+  .nav-link {
+    color: #fff;
+    text-decoration: none;
+    font-size: 16px;
+  }
+  
+  /* Turn the Account link into a button that looks like a link */
+  .button-link {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 16px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  
+  /* MODAL STYLES */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+  }
+  
+  .modal-content {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 8px;
+    position: relative;
+    width: 400px;
+    max-width: 80%;
+  }
+  
+  .modal-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 1rem;
+    border: none;
+    background: transparent;
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+  
+  .form-row {
+    margin-bottom: 1rem;
+  }
+  
+  .form-row label {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
