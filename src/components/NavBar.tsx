@@ -18,6 +18,7 @@ const NavBar: React.FC = () => {
   const [accountPassword, setAccountPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
+
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSearchTermFinal(searchTerm)
@@ -39,6 +40,8 @@ const NavBar: React.FC = () => {
       axios.defaults.headers.post['Content-Type'] = 'application/json';
       setShowAccountModal(false);
       setIsLoggedIn(true);
+      setSearchTerm("nasdaq")
+      setSearchTermFinal("nasdaq")
     } catch (error: any) {
       console.error('Login error:', error);
       setLoginError(error.message || 'Login failed');

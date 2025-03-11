@@ -64,7 +64,7 @@ const Stock: React.FC<params> = ({ searchTerm,isLoggedIn }) => {
     fetchData();
   }, [searchTerm,isLoggedIn]);
 
-  if (!isLoggedIn) return <div>Please log in to see news updates.</div>;
+  if (!isLoggedIn) return <div>Please log in to see the stocks.</div>;
   if (loading) return <div>Loading stock data...</div>;
   if (error) return <div>Error: {error}</div>;
 

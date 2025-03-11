@@ -20,7 +20,6 @@ const News: React.FC<params> = ({ searchTerm,isLoggedIn }) => {
 
     useEffect(() => {
         if (!isLoggedIn) return
-        if (!searchTerm) {searchTerm = "nasdaq";}
         // Example: fetch data from an API or mocked JSON
         // For demonstration, let's just simulate with a setTimeout
         const fetchData = async () => {
@@ -43,7 +42,7 @@ const News: React.FC<params> = ({ searchTerm,isLoggedIn }) => {
               { Title: "Unemployment Rate Falls to Historic Low", PublishedAt: "2023-08-08 14:25:35", Opinion: 1 },
             ];
             setNewsData(simulatedData);
-            //setError('Failed to fetch data');
+            setError('Failed to fetch data');
           } finally {
             setLoading(false);
           }
