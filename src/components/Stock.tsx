@@ -8,12 +8,18 @@ type StockDataPoint = {
   volume: number;
 };
 
-const Stock: React.FC = () => {
+type params = {
+  searchTerm: string;
+  isLoggedIn: boolean
+};
+
+const Stock: React.FC<params> = ({ searchTerm,isLoggedIn }) => {
   const [stockData, setStockData] = useState<StockDataPoint[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isLoggedIn) return
     // Example: fetch data from an API or mocked JSON
     // For demonstration, let's just simulate with a setTimeout
     const fetchData = async () => {
@@ -35,10 +41,16 @@ const Stock: React.FC = () => {
       } catch (err) {
         //setError('Failed to fetch data');
         const simulatedData: StockDataPoint[] = [
-          { date: '2025-02-18T18:23:59.469154', close: 190.03883841198058, volume: 9000 },
-          { date: '2025-02-18T18:53:59.469154', close: 191.03883841198058, volume: 9000 },
-          { date: '2025-02-18T19:23:59.469154', close: 192.03883841198058, volume: 9000 },
-          // Add as many daily points as you like
+          { date: '2025-02-18T18:23:59.469154', close: 190.289143, volume: 9000 },
+          { date: '2025-02-18T18:53:59.469154', close: 189.311999, volume: 9000 },
+          { date: '2025-02-18T19:23:59.469154', close: 188.427231, volume: 9000 },
+          { date: '2025-02-18T19:53:59.469154', close: 188.167850, volume: 9000 },
+          { date: '2025-02-18T20:23:59.469154', close: 188.074236, volume: 9000 },
+          { date: '2025-02-18T20:53:59.469154', close: 191.080997, volume: 9000 },
+          { date: '2025-02-18T21:23:59.469154', close: 189.575534, volume: 9000 },
+          { date: '2025-02-18T21:53:59.469154', close: 190.376600, volume: 9000 },
+          { date: '2025-02-18T22:23:59.469154', close: 188.879733, volume: 9000 },
+          { date: '2025-02-18T22:53:59.469154', close: 188.437963, volume: 9000 },
         ];
 
         // Simulate API call
@@ -50,8 +62,9 @@ const Stock: React.FC = () => {
     };
 
     fetchData();
-  }, []);
+  }, [searchTerm,isLoggedIn]);
 
+  if (!isLoggedIn) return <div>Please log in to see news updates.</div>;
   if (loading) return <div>Loading stock data...</div>;
   if (error) return <div>Error: {error}</div>;
 

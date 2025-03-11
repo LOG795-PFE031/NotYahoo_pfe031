@@ -1,15 +1,12 @@
 import NavBar from './NavBar'
-import Stock from './Stock'
 
 function App() {
   return (
     <>
-    <NavBar>
+      <NavBar>
+        
+      </NavBar>
       
-    </NavBar>
-      <Stock>
-
-      </Stock>
     </>
   )
 }
