@@ -1,9 +1,9 @@
 import React from 'react';
 
 type NewsData = {
-    Title: string;
-    PublishedAt: string;
-    Opinion: number;
+    title: string;
+    publishedAt: string;
+    opinion: number;
 };
 
 interface NewsCardProps {
@@ -11,7 +11,7 @@ interface NewsCardProps {
 }
 
 const NewsCard: React.FC<NewsCardProps> = ({ data }) => {
-    const formattedData = {PublishedAt: data.PublishedAt.toString(), Title: data.Title, Opinion: data.Opinion}
+    const formattedData = {PublishedAt: data.publishedAt.toString(), Title: data.title, Opinion: data.opinion}
     return (
       <div className="bg-white border-2 border-gray-300 rounded-2xl shadow-lg overflow-hidden w-full sm:w-[300px]">
         <div className="p-6">

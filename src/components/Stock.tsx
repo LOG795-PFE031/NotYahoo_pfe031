@@ -24,16 +24,10 @@ const Stock: React.FC<params> = ({ searchTerm,isLoggedIn }) => {
     // For demonstration, let's just simulate with a setTimeout
     const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/predict/next_day");
+        const live = new Date().toISOString()
+        const response = await axios.get("https://localhost:8081/stocks/" + searchTerm + "/" + live);
 
-        console.log(response.data);
-
-        // const formattedData = response.data.map((item: any) => ({
-        //   date: item.timestamp, // Make sure the API returns this
-        //   price: item.prediction || item.price, // Adjust based on API response
-        // }));
-
-        const formattedData = [{date: response.data.timestamp, close: response.data.prediction, volume:0}]
+        const formattedData = [{date: live, close: response.data.value, volume:0}]
 
         setStockData(formattedData);
         // Mock data

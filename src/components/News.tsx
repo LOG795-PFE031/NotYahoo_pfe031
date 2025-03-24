@@ -26,7 +26,8 @@ const News: React.FC<params> = ({ searchTerm,isLoggedIn }) => {
           try {
             const response = await axios.get("https://localhost:8081/news/" + searchTerm);
 
-            setNewsData(response.data.ArticleViewModels);
+            setNewsData(response.data.articleViewModels);
+            
           } catch (err) {
             const simulatedData = [
               { Title: "Stock Market Rallies Amid Economic Optimism", PublishedAt: "2023-08-01 14:25:35", Opinion: 1 },
