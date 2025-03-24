@@ -5,12 +5,14 @@ import { AuthServer } from '../clients/AuthServer';
 import axios from 'axios';
 import Stock from './Stock';
 import News from './News';
+import Portfolio from './Portfolio';
 
 const authServer = new AuthServer('https://localhost:8081');
 
 const NavBar: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchTermFinal, setSearchTermFinal] = useState('');
+  const [currentPage, setCurrentPage] = useState('');
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -56,6 +58,18 @@ const NavBar: React.FC = () => {
           <img src={successLogo} alt="Success Logo" className="navbar__logo" />
         </div>
 
+        <div className="navbar__left">
+            <button onClick={() => setCurrentPage("portfolio")} className="search-button">
+              Portfolio
+            </button>
+        </div>
+
+        <div className="navbar__left">
+            <button onClick={() => setCurrentPage("market")} className="search-button px-5">
+              Market
+            </button>
+        </div>
+
         {/* Center Section: Search Bar */}
         <div className="navbar__center">
           <form onSubmit={handleSearch} className="search-form">
@@ -86,12 +100,27 @@ const NavBar: React.FC = () => {
           </button>
         </div>
       </nav>
-      <Stock searchTerm={searchTermFinal} isLoggedIn={isLoggedIn}>
-
-      </Stock>
-      <News searchTerm={searchTermFinal} isLoggedIn={isLoggedIn}>
-
-      </News>
+      {
+        currentPage == "market" ? (
+          <Stock searchTerm={searchTermFinal} isLoggedIn={isLoggedIn} />
+        ) : (
+          <div></div>
+        )
+      }
+      {
+        currentPage == "market" ? (
+          <News searchTerm={searchTermFinal} isLoggedIn={isLoggedIn}/>
+        ) : (
+          <div></div>
+        )
+      }
+      {
+        currentPage == "portfolio" ? (
+          <Portfolio setSearchTermFinal={setSearchTermFinal} setSearchTerm={setSearchTerm} setCurrentPage={setCurrentPage} searchTerm={searchTermFinal} isLoggedIn={isLoggedIn} />
+        ) : (
+          <div></div>
+        )
+      }
 
       {/* Account Modal */}
       {showAccountModal && (
