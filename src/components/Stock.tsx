@@ -56,6 +56,7 @@ const Stock: React.FC<params> = ({ searchTerm,isLoggedIn }) => {
         // Simulate API call
         //await new Promise((resolve) => setTimeout(resolve, 1000));
         setStockData(simulatedData);
+        //setError('Failed to fetch data');
       } finally {
         setLoading(false);
       }

@@ -36,7 +36,7 @@ const NavBar: React.FC = () => {
       const loginResponse = await authServer.login(accountUsername, accountPassword);
       console.log('Login successful, token:', loginResponse);
       // Optionally: Save token (e.g., localStorage) and close modal on success
-      axios.defaults.headers.common['Authorization'] = loginResponse;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${loginResponse}`;
       axios.defaults.headers.post['Content-Type'] = 'application/json';
       setShowAccountModal(false);
       setIsLoggedIn(true);

@@ -24,10 +24,7 @@ const News: React.FC<params> = ({ searchTerm,isLoggedIn }) => {
         // For demonstration, let's just simulate with a setTimeout
         const fetchData = async () => {
           try {
-
             const response = await axios.get("https://localhost:8081/news/" + searchTerm);
-
-            console.log(response.data);
 
             setNewsData(response.data.ArticleViewModels);
           } catch (err) {
@@ -42,7 +39,7 @@ const News: React.FC<params> = ({ searchTerm,isLoggedIn }) => {
               { Title: "Unemployment Rate Falls to Historic Low", PublishedAt: "2023-08-08 14:25:35", Opinion: 1 },
             ];
             setNewsData(simulatedData);
-            setError('Failed to fetch data');
+            //setError('Failed to fetch data');
           } finally {
             setLoading(false);
           }
