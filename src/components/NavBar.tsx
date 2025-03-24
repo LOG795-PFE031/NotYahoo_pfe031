@@ -2,19 +2,26 @@ import React, { useState, FormEvent } from 'react';
 import successLogo from '../Assets/Success.jpg'; // adjust the path
 import '../css/NavBar.css';
 import { AuthServer } from '../clients/AuthServer';
+import axios from 'axios';
+import Stock from './Stock';
+import News from './News';
 
 const authServer = new AuthServer('https://localhost:8081');
 
 const NavBar: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchTermFinal, setSearchTermFinal] = useState('');
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const [accountUsername, setAccountUsername] = useState('');
   const [accountPassword, setAccountPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
+
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setSearchTermFinal(searchTerm)
     console.log('Searching for:', searchTerm);
     // Your search logic here
   };
@@ -29,7 +36,12 @@ const NavBar: React.FC = () => {
       const loginResponse = await authServer.login(accountUsername, accountPassword);
       console.log('Login successful, token:', loginResponse);
       // Optionally: Save token (e.g., localStorage) and close modal on success
+      axios.defaults.headers.common['Authorization'] = `Bearer ${loginResponse}`;
+      axios.defaults.headers.post['Content-Type'] = 'application/json';
       setShowAccountModal(false);
+      setIsLoggedIn(true);
+      setSearchTerm("AAPL")
+      setSearchTermFinal("AAPL")
     } catch (error: any) {
       console.error('Login error:', error);
       setLoginError(error.message || 'Login failed');
@@ -74,6 +86,12 @@ const NavBar: React.FC = () => {
           </button>
         </div>
       </nav>
+      <Stock searchTerm={searchTermFinal} isLoggedIn={isLoggedIn}>
+
+      </Stock>
+      <News searchTerm={searchTermFinal} isLoggedIn={isLoggedIn}>
+
+      </News>
 
       {/* Account Modal */}
       {showAccountModal && (
