@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { FormEvent, useEffect, useState } from 'react';
 import axios from 'axios';
+import Share from './Share';
 
 
 type Share = {
@@ -18,37 +19,45 @@ type params = {
 
 const Portfolio: React.FC<params> = ({ setSearchTermFinal,setSearchTerm,setCurrentPage,searchTerm,isLoggedIn }) => {
     const [shares, setShares] = useState<Share[]>([]);
+    const [totalShares, setTotalShares]  = useState<number>(0);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
+    const fetchData = async () => {
+        try {
+          const response = await axios.get("https://localhost:8081/portfolio");
+          setShares(response.data.shareVolumes);
+          setTotalShares(0)
+
+        } catch (err) {
+              const simulatedData = [
+                  { symbol: "TSLA", volume: 384 },
+                  { symbol: "AAPL", volume: 92 },
+                  { symbol: "GOOGL", volume: 419 },
+                  { symbol: "META", volume: 237 },
+                  { symbol: "MSFT", volume: 12 }
+              ];
+              setShares(simulatedData);
+
+              const table: Record<string, number> = {};
+              shares.forEach((share) => {
+                  table[share.symbol] = 0;
+              })
+              setBuySellShares(table)
+          
+              //setError('Failed to fetch data');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+    const countTotal = (value: number) => {
+        setTotalShares((prevTotalShares) => prevTotalShares + value);
+    }
+
     useEffect(() => {
         if (!isLoggedIn) return
-        // Example: fetch data from an API or mocked JSON
-        // For demonstration, let's just simulate with a setTimeout
-        const fetchData = async () => {
-          try {
-            const response = await axios.get("https://localhost:8081/portfolio");
-
-            console.log(response.data);
-
-            setShares(response.data);
-            
-          } catch (err) {
-                const simulatedData = [
-                    { symbol: "TSLA", volume: 384 },
-                    { symbol: "AAPL", volume: 92 },
-                    { symbol: "GOOGL", volume: 419 },
-                    { symbol: "META", volume: 237 },
-                    { symbol: "MSFT", volume: 12 }
-                ];
-                setShares(simulatedData);
-            
-                //setError('Failed to fetch data');
-          } finally {
-            setLoading(false);
-          }
-        };
-    
+        
         fetchData();
       }, [searchTerm, isLoggedIn]);
 
@@ -58,21 +67,16 @@ const Portfolio: React.FC<params> = ({ setSearchTermFinal,setSearchTerm,setCurre
 
       return(
 <div className="p-4">
-  <h2 className="text-xl font-bold mb-2">Random Shares</h2>
+  <h2 className="text-xl font-bold mb-2">My Shares</h2>
 
   <ul className="list-disc pl-5">
     {shares.map((share, index) => (
       <li key={index} className="mb-1">
-        <button 
-          onClick={() => {setSearchTermFinal(share.symbol);setSearchTerm(share.symbol);setCurrentPage("market")}}
-          className="text-blue-500 hover:underline"
-        >
-          <strong>{share.symbol}</strong>
-        </button>
-        : {share.volume} shares
+        <Share setSearchTermFinal={setSearchTermFinal} setSearchTerm={setSearchTerm} setCurrentPage={setCurrentPage} getSharePrice={countTotal} share={share} reloadPage={fetchData}></Share>
       </li>
     ))}
   </ul>
+  total: {totalShares.toFixed(2)}$
 </div>
       );
 }
