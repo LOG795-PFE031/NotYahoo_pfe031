@@ -3,9 +3,9 @@ import NewsCard from '../models/NewsCard'
 import axios from 'axios';
 
 type NewsData = {
-  Title: string;
-  PublishedAt: string;
-  Opinion: number;
+  title: string;
+  publishedAt: string;
+  opinion: number;
 };
 
 type params = {
@@ -27,17 +27,17 @@ const News: React.FC<params> = ({ searchTerm,isLoggedIn }) => {
             const response = await axios.get("https://localhost:8081/news/" + searchTerm);
 
             setNewsData(response.data.articleViewModels);
-            
+
           } catch (err) {
             const simulatedData = [
-              { Title: "Stock Market Rallies Amid Economic Optimism", PublishedAt: "2023-08-01 14:25:35", Opinion: 1 },
-              { Title: "Federal Reserve Holds Interest Rates Steady", PublishedAt: "2023-08-02 14:25:35", Opinion: 0 },
-              { Title: "Tech Giants Report Mixed Quarterly Earnings", PublishedAt: "2023-08-03 14:25:35", Opinion: -1 },
-              { Title: "Oil Prices Surge Following Supply Concerns", PublishedAt: "2023-08-04 14:25:35", Opinion: 1 },
-              { Title: "Global Markets Tumble Amid Recession Fears", PublishedAt: "2023-08-05 14:25:35", Opinion: -1 },
-              { Title: "Government Announces New Infrastructure Plan", PublishedAt: "2023-08-06 14:25:35", Opinion: 1 },
-              { Title: "Cryptocurrency Market Sees Sharp Decline", PublishedAt: "2023-08-07 14:25:35", Opinion: -1 },
-              { Title: "Unemployment Rate Falls to Historic Low", PublishedAt: "2023-08-08 14:25:35", Opinion: 1 },
+              { title: "Stock Market Rallies Amid Economic Optimism", publishedAt: "2023-08-01 14:25:35", opinion: 1 },
+              { title: "Federal Reserve Holds Interest Rates Steady", publishedAt: "2023-08-02 14:25:35", opinion: 0 },
+              { title: "Tech Giants Report Mixed Quarterly Earnings", publishedAt: "2023-08-03 14:25:35", opinion: -1 },
+              { title: "Oil Prices Surge Following Supply Concerns", publishedAt: "2023-08-04 14:25:35", opinion: 1 },
+              { title: "Global Markets Tumble Amid Recession Fears", publishedAt: "2023-08-05 14:25:35", opinion: -1 },
+              { title: "Government Announces New Infrastructure Plan", publishedAt: "2023-08-06 14:25:35", opinion: 1 },
+              { title: "Cryptocurrency Market Sees Sharp Decline", publishedAt: "2023-08-07 14:25:35", opinion: -1 },
+              { title: "Unemployment Rate Falls to Historic Low", publishedAt: "2023-08-08 14:25:35", opinion: 1 },
             ];
             setNewsData(simulatedData);
             //setError('Failed to fetch data');
