@@ -1,9 +1,9 @@
 import React, { FormEvent, useEffect, useState } from 'react';
 import axios from 'axios';
-import Share from './Share';
+import Share from '../models/Share';
 
 
-type Share = {
+type ShareData = {
     symbol: string;
     volume: number;
 }
@@ -18,7 +18,7 @@ type params = {
 };
 
 const Portfolio: React.FC<params> = ({ setSearchTermFinal,setSearchTerm,setCurrentPage,searchTerm,isLoggedIn }) => {
-    const [shares, setShares] = useState<Share[]>([]);
+    const [shares, setShares] = useState<ShareData[]>([]);
     const [totalShares, setTotalShares]  = useState<number>(0);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -38,12 +38,6 @@ const Portfolio: React.FC<params> = ({ setSearchTermFinal,setSearchTerm,setCurre
                   { symbol: "MSFT", volume: 12 }
               ];
               setShares(simulatedData);
-
-              const table: Record<string, number> = {};
-              shares.forEach((share) => {
-                  table[share.symbol] = 0;
-              })
-              setBuySellShares(table)
           
               //setError('Failed to fetch data');
         } finally {
@@ -69,15 +63,26 @@ const Portfolio: React.FC<params> = ({ setSearchTermFinal,setSearchTerm,setCurre
 <div className="p-4">
   <h2 className="text-xl font-bold mb-2">My Shares</h2>
 
-  <ul className="list-disc pl-5">
-    {shares.map((share, index) => (
-      <li key={index} className="mb-1">
-        <Share setSearchTermFinal={setSearchTermFinal} setSearchTerm={setSearchTerm} setCurrentPage={setCurrentPage} getSharePrice={countTotal} share={share} reloadPage={fetchData}></Share>
-      </li>
-    ))}
-  </ul>
-  total: {totalShares.toFixed(2)}$
+  <table className="min-w-full bg-white border border-gray-300 shadow-md rounded-lg">
+    <thead>
+      <tr className="bg-gray-100">
+        <th className="px-4 py-2">Symbol</th>
+        <th className="px-4 py-2">Shares</th>
+        <th className="px-4 py-2">Total Price</th>
+        <th className="px-4 py-2">Amount</th>
+        <th className="px-4 py-2">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {shares.map((share, index) => (
+        <Share key={index} setSearchTermFinal={setSearchTermFinal} setSearchTerm={setSearchTerm} setCurrentPage={setCurrentPage} getSharePrice={countTotal} share={share} reloadPage={fetchData} />
+      ))}
+    </tbody>
+  </table>
+
+  <p className="mt-2 text-right font-bold">Total: {totalShares.toFixed(2)}$</p>
 </div>
+
       );
 }
 
