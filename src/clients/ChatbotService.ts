@@ -1,18 +1,15 @@
 import { ChatOpenAI } from "@langchain/openai";
-import { ConversationChain } from "langchain/chains";
-import { BufferMemory, ChatMessageHistory } from "langchain/memory";
 import { ConversationSummaryBufferMemory } from "langchain/memory";
-import { HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages";
 
 // Risk tolerance options
-const RISK_TOLERANCE_OPTIONS = {
+export const RISK_TOLERANCE_OPTIONS = {
   '1': 'low',
   '2': 'medium',
   '3': 'high'
 };
 
 // Investment goals options
-const INVESTMENT_GOALS_OPTIONS = {
+export const INVESTMENT_GOALS_OPTIONS = {
   '1': 'Conservative Income (Focus on stable, dividend-paying investments)',
   '2': 'Balanced Growth (Mix of growth and income)',
   '3': 'Aggressive Growth (Focus on capital appreciation)',
@@ -21,7 +18,7 @@ const INVESTMENT_GOALS_OPTIONS = {
 };
 
 // Available sectors
-const AVAILABLE_SECTORS = {
+export const AVAILABLE_SECTORS = {
   '1': 'Technology',
   '2': 'Healthcare',
   '3': 'Financial Services',
@@ -95,6 +92,7 @@ class ChatbotService {
         openAIApiKey: this.apiKey,
         modelName: "gpt-4", // or any other model you prefer
         temperature: 0.7,
+        streaming: true, // Streaming is enabled for real-time token generation
       });
 
       // Create a memory with conversation summary
@@ -174,11 +172,20 @@ class ChatbotService {
   }
 
   /**
-   * Send a message to the chatbot and get a response
+   * Send a message to the chatbot and get a streaming response
    * @param message The user message
-   * @returns Promise with the chatbot response
+   * @param onTokenStream Callback function to receive streamed tokens in real-time
+   * @returns Promise with the complete chatbot response
+   * 
+   * Example usage with streaming:
+   * ```
+   * chatbotService.sendMessage(userMessage, (token) => {
+   *   // Update UI with each token as it arrives
+   *   setPartialResponse(prev => prev + token);
+   * });
+   * ```
    */
-  async sendMessage(message: string): Promise<string> {
+  async sendMessage(message: string, onTokenStream?: (token: string) => void): Promise<string> {
     try {
       if (!this.model) {
         this.initializeModel();
@@ -226,59 +233,106 @@ Always reference specific details from past conversations, including exact inves
 Be precise when recalling past information.
 Previous conversation summary: ${summaryContent}`;
       
-      // First API call with function calling
+      // First API call with function calling and streaming
       const messages = [
         { role: "system", content: systemContent },
         ...conversationHistory,
         { role: "user", content: message }
       ];
       
-      const response = await this.model.invoke(messages, {
-        tools: [{ type: "function", function: updateProfileFunction }]
-      });
+      // Initialize a string to collect the streamed response
+      let fullResponse = "";
       
-      // Handle function call if present
-      if (response.additional_kwargs?.tool_calls) {
-        const toolCall = response.additional_kwargs.tool_calls[0];
+      // If streaming is enabled, use streaming mode
+      if (onTokenStream) {
+        const streamingResponse = await this.model.invoke(messages, {
+          tools: [{ type: "function", function: updateProfileFunction }],
+          callbacks: [
+            {
+              handleLLMNewToken(token: string) {
+                fullResponse += token;
+                onTokenStream(token);
+              },
+            },
+          ],
+        });
         
-        // Extract function name and arguments
-        const functionName = toolCall.function?.name;
-        const functionArgs = JSON.parse(toolCall.function?.arguments || "{}");
+        // Save assistant response to memory
+        await this.memory.saveContext(
+          { input: message },
+          { output: fullResponse }
+        );
         
-        if (functionName === "update_profile") {
-          // Update user profile
-          this.updateProfile(functionArgs);
+        // Handle function call if present in the response
+        if (streamingResponse.additional_kwargs?.tool_calls) {
+          const toolCall = streamingResponse.additional_kwargs.tool_calls[0];
           
-          // Second API call for final response
-          const secondMessages = [
-            { role: "system", content: systemContent },
-            ...conversationHistory,
-            { role: "assistant", content: "Profile updated successfully. " + response.content }
-          ];
+          // Extract function name and arguments
+          const functionName = toolCall.function?.name;
+          const functionArgs = JSON.parse(toolCall.function?.arguments || "{}");
           
-          const secondResponse = await this.model.invoke(secondMessages);
-          const finalMessage = String(secondResponse.content);
-          
-          // Save assistant response to memory
-          await this.memory.saveContext(
-            { input: message },
-            { output: finalMessage }
-          );
-          
-          return finalMessage;
+          if (functionName === "update_profile") {
+            // Update user profile
+            this.updateProfile(functionArgs);
+            
+            // Inform the user that profile was updated
+            const updateMessage = "\n\nI've updated your financial profile based on this information.";
+            onTokenStream(updateMessage);
+            fullResponse += updateMessage;
+          }
         }
+        
+        return fullResponse;
+      } 
+      // If no streaming callback is provided, use the normal approach
+      else {
+        const response = await this.model.invoke(messages, {
+          tools: [{ type: "function", function: updateProfileFunction }]
+        });
+        
+        // Handle function call if present
+        if (response.additional_kwargs?.tool_calls) {
+          const toolCall = response.additional_kwargs.tool_calls[0];
+          
+          // Extract function name and arguments
+          const functionName = toolCall.function?.name;
+          const functionArgs = JSON.parse(toolCall.function?.arguments || "{}");
+          
+          if (functionName === "update_profile") {
+            // Update user profile
+            this.updateProfile(functionArgs);
+            
+            // Second API call for final response
+            const secondMessages = [
+              { role: "system", content: systemContent },
+              ...conversationHistory,
+              { role: "assistant", content: "Profile updated successfully. " + response.content }
+            ];
+            
+            const secondResponse = await this.model.invoke(secondMessages);
+            const finalMessage = String(secondResponse.content);
+            
+            // Save assistant response to memory
+            await this.memory.saveContext(
+              { input: message },
+              { output: finalMessage }
+            );
+            
+            return finalMessage;
+          }
+        }
+        
+        // No function call; direct response
+        const finalMessage = String(response.content);
+        
+        // Save assistant response to memory
+        await this.memory.saveContext(
+          { input: message },
+          { output: finalMessage }
+        );
+        
+        return finalMessage;
       }
-      
-      // No function call; direct response
-      const finalMessage = String(response.content);
-      
-      // Save assistant response to memory
-      await this.memory.saveContext(
-        { input: message },
-        { output: finalMessage }
-      );
-      
-      return finalMessage;
     } catch (error) {
       console.error("Error sending message to chatbot:", error);
       return "Sorry, I'm having trouble processing your request. Please try again later.";

@@ -18,6 +18,8 @@ import {
   useColorModeValue
 } from '@chakra-ui/react';
 import { IconSend, IconRobot, IconUser, IconInfoCircle } from '@tabler/icons-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import chatbotService from '../../clients/ChatbotService';
 
 interface Message {
@@ -25,6 +27,7 @@ interface Message {
   content: string;
   sender: 'user' | 'assistant';
   timestamp: Date;
+  isStreaming?: boolean;
 }
 
 const Advisor: React.FC = () => {
@@ -33,10 +36,23 @@ const Advisor: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [streamingId, setStreamingId] = useState<string | null>(null);
+  const [cursorVisible, setCursorVisible] = useState(true);
   
   const bgColor = useColorModeValue('gray.50', 'gray.800');
   const messageBgUser = useColorModeValue('blue.500', 'blue.400');
   const messageBgAssistant = useColorModeValue('gray.200', 'gray.700');
+  
+  // Blinking cursor effect
+  useEffect(() => {
+    if (streamingId) {
+      const interval = setInterval(() => {
+        setCursorVisible(prev => !prev);
+      }, 500);
+      
+      return () => clearInterval(interval);
+    }
+  }, [streamingId]);
   
   // Add initial welcome message from the assistant
   useEffect(() => {
@@ -75,18 +91,41 @@ const Advisor: React.FC = () => {
     setIsLoading(true);
     
     try {
-      // Send message to chatbot service
-      const response = await chatbotService.sendMessage(input);
+      // Create a streaming assistant message placeholder
+      const assistantMessageId = crypto.randomUUID();
+      setStreamingId(assistantMessageId);
       
-      // Add assistant response
       const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        content: response,
+        id: assistantMessageId,
+        content: "",
         sender: 'assistant',
-        timestamp: new Date()
+        timestamp: new Date(),
+        isStreaming: true
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Use streaming mode with callback
+      await chatbotService.sendMessage(input, (token) => {
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === assistantMessageId 
+              ? { ...msg, content: msg.content + token } 
+              : msg
+          )
+        );
+      });
+      
+      // Mark message as no longer streaming when complete
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { ...msg, isStreaming: false } 
+            : msg
+        )
+      );
+      
+      setStreamingId(null);
     } catch (error) {
       console.error('Error communicating with chatbot:', error);
       
@@ -99,6 +138,7 @@ const Advisor: React.FC = () => {
       };
       
       setMessages(prev => [...prev, errorMessage]);
+      setStreamingId(null);
     } finally {
       setIsLoading(false);
     }
@@ -108,6 +148,22 @@ const Advisor: React.FC = () => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
   
+  // Custom rendering components for markdown
+  const MarkdownComponents = {
+    p: (props: any) => <Text mb={2} {...props} />,
+    h1: (props: any) => <Heading as="h1" size="xl" mt={6} mb={4} {...props} />,
+    h2: (props: any) => <Heading as="h2" size="lg" mt={5} mb={3} {...props} />,
+    h3: (props: any) => <Heading as="h3" size="md" mt={4} mb={2} {...props} />,
+    ul: (props: any) => <Box as="ul" pl={4} mb={4} {...props} />,
+    ol: (props: any) => <Box as="ol" pl={4} mb={4} {...props} />,
+    li: (props: any) => <Box as="li" mb={1} {...props} />,
+    a: (props: any) => <Text as="a" color="blue.500" textDecoration="underline" {...props} />,
+    strong: (props: any) => <Text as="strong" fontWeight="bold" {...props} />,
+    em: (props: any) => <Text as="em" fontStyle="italic" {...props} />,
+    code: (props: any) => <Text as="code" bg="gray.100" p={1} borderRadius="sm" {...props} />,
+    pre: (props: any) => <Box as="pre" bg="gray.100" p={2} borderRadius="md" overflowX="auto" my={2} {...props} />
+  };
+
   return (
     <Container maxW="container.lg" py={8}>
       <Box bg={bgColor} borderRadius="lg" overflow="hidden" boxShadow="md">
@@ -148,8 +204,22 @@ const Advisor: React.FC = () => {
                     <Avatar size="sm" icon={<IconRobot size={20} />} bg="brand.500" />
                   )}
                   
-                  <Box>
-                    <Text>{message.content}</Text>
+                  <Box overflow="hidden">
+                    {message.sender === 'assistant' ? (
+                      <>
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={MarkdownComponents}
+                        >
+                          {message.content || " "}
+                        </ReactMarkdown>
+                        {message.isStreaming && cursorVisible && (
+                          <Box as="span" display="inline-block" ml={1}>▋</Box>
+                        )}
+                      </>
+                    ) : (
+                      <Text>{message.content}</Text>
+                    )}
                     <Text fontSize="xs" color={message.sender === 'user' ? 'whiteAlpha.700' : 'gray.500'} textAlign="right">
                       {formatTime(message.timestamp)}
                     </Text>
@@ -164,7 +234,7 @@ const Advisor: React.FC = () => {
             <div ref={messagesEndRef} />
           </VStack>
           
-          {isLoading && (
+          {isLoading && !streamingId && (
             <Flex justify="flex-start" mt={4}>
               <HStack
                 alignItems="center" 
@@ -190,13 +260,13 @@ const Advisor: React.FC = () => {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about investments, stock advice, financial planning..."
                 mr={2}
-                disabled={isLoading}
+                disabled={isLoading || !!streamingId}
                 _disabled={{ opacity: 0.7 }}
               />
               <Button
                 type="submit"
                 colorScheme="blue"
-                isDisabled={isLoading || !input.trim()}
+                isDisabled={isLoading || !!streamingId || !input.trim()}
                 leftIcon={<IconSend size={16} />}
               >
                 Send
