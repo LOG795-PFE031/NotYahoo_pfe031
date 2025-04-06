@@ -14,9 +14,13 @@ import {
   PopoverContent,
   PopoverArrow,
   PopoverBody,
-  Heading
+  Heading,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem
 } from '@chakra-ui/react';
-import { IconSearch } from '@tabler/icons-react';
+import { IconSearch, IconChevronDown } from '@tabler/icons-react';
 import Login from '../pages/Login';
 
 const Header = () => {
@@ -74,9 +78,21 @@ const Header = () => {
             <ChakraLink as={RouterLink} to="/markets" fontWeight="medium">
               Markets
             </ChakraLink>
-            <ChakraLink as={RouterLink} to="/portfolio" fontWeight="medium">
-              Portfolio
-            </ChakraLink>
+            
+            <Menu>
+              <MenuButton as={ChakraLink} fontWeight="medium">
+                Portfolio <IconChevronDown size={14} style={{ display: 'inline' }} />
+              </MenuButton>
+              <MenuList>
+                <MenuItem as={RouterLink} to="/portfolio">
+                  Overview
+                </MenuItem>
+                <MenuItem as={RouterLink} to="/portfolio/performance">
+                  Performance Analytics
+                </MenuItem>
+              </MenuList>
+            </Menu>
+            
             <ChakraLink as={RouterLink} to="/advisor" fontWeight="medium">
               AI Advisor
             </ChakraLink>
