@@ -1,50 +1,134 @@
-# React + TypeScript + Vite
+# NotYahoo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A comprehensive financial analysis platform with AI-powered stock predictions, market sentiment analysis, and an interactive financial advisor chatbot.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 📈 **Stock Prediction Service**: Get AI-generated predictions for stock performance
+- 📰 **Market Sentiment Analysis**: Analyze market sentiment based on news articles
+- 💬 **Interactive Chatbot**: Get answers to financial questions and personalized investment recommendations
+- 📊 **Portfolio Management**: Track and manage your investments
+- 📱 **Responsive UI**: Modern interface built with React and Chakra UI
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+- **Frontend**: React, Chakra UI, React Router
+- **Charts & Visualization**: Recharts
+- **Runtime**: Bun
+- **AI & ML Libraries**: LangChain, OpenAI
+- **HTTP Client**: Axios
+- **Package Manager**: Bun
 
-- Configure the top-level `parserOptions` property like this:
+## Installation & Setup
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### Prerequisites
+
+- [Bun](https://bun.sh/) (latest version)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/NotYahoo.git
+   cd NotYahoo
+   ```
+
+2. Install dependencies:
+   ```bash
+   bun install
+   ```
+
+3. Set up environment variables:
+   Create a `.env` file in the root directory with the following variables:
+   ```
+   VITE_PREDICTION_SERVICE_URL=http://localhost:8000
+   VITE_SENTIMENT_SERVICE_URL=http://localhost:8092
+   VITE_OPENAI_API_KEY=your_openai_api_key
+   ```
+
+4. Start the development server:
+   ```bash
+   bun run dev
+   ```
+
+5. Open your browser and navigate to `http://localhost:5173`
+
+## API Services
+
+### Stock Prediction Service
+
+Endpoint: `http://localhost:8000/docs/{ticker}`
+
+Sample Response:
+```json
+{
+  "symbol": "AAPL",
+  "price": 150.25,
+  "timestamp": "2024-03-21T00:00:00",
+  "confidence_score": 0.85,
+  "model_type": "lstm"
+}
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+### Market Sentiment Analysis
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+Endpoint: `http://localhost:8092/analyze/{ticker}`
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+Sample Data Format:
+```json
+[
+  {
+    "url": "string",
+    "title": "string",
+    "ticker": "string",
+    "content": "string",
+    "date": "string",
+    "sentiment_scores": {
+      "positive": 0.1,
+      "neutral": 0.2,
+      "negative": 0.7
+    }
+  }
+]
 ```
+
+## API Client Implementation
+
+The application uses a centralized API client service to interact with backend services:
+
+- **Modular Architecture**: Each microservice has its own client with appropriate configuration
+- **Type Safety**: All API requests and responses are fully typed
+- **Error Handling**: Comprehensive error catching and reporting
+- **Extensibility**: Generic methods make it easy to add new service endpoints
+
+### Example Usage
+
+```typescript
+// Get stock prediction
+const stockPrediction = await apiService.getStockPrediction('AAPL');
+
+// Get sentiment analysis
+const sentimentData = await apiService.getSentimentAnalysis('AAPL');
+
+// Get historical data
+const historicalData = await apiService.getHistoricalData('AAPL', '1y', '1d');
+```
+
+## Interactive Chatbot
+
+The platform features an AI-powered chatbot that can:
+- Answer questions about stock data and financial concepts
+- Provide personalized investment recommendations
+- Analyze user preferences and history to offer tailored advice
+
+## Building for Production
+
+```bash
+bun run build
+```
+
+The built files will be in the `dist` directory.
+
+## License
+
+This project is licensed under the terms found in the LICENSE file.

@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard.tsx';
 import StockDetails from './pages/StockDetails.tsx';
 import Portfolio from './pages/Portfolio.tsx';
 import Advisor from './pages/Advisor.tsx';
+import PortfolioPerformance from './pages/PortfolioPerformance.tsx';
 
 // Import layout components
 import Header from './layout/Header.tsx';
@@ -22,6 +23,7 @@ const App: React.FC = () => {
           <Route path="/" element={<Dashboard />} />
           <Route path="/stock/:ticker" element={<StockDetails />} />
           <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/portfolio/performance" element={<PortfolioPerformance />} />
           <Route path="/advisor" element={<Advisor />} />
         </Routes>
       </Box>
