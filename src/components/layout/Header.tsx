@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
@@ -7,11 +7,52 @@ import {
   Button,
   Input,
   Link as ChakraLink,
-  IconButton
+  IconButton,
+  Popover,
+  PopoverTrigger,
+  Portal,
+  PopoverContent,
+  PopoverArrow,
+  PopoverBody,
+  Heading
 } from '@chakra-ui/react';
 import { IconSearch } from '@tabler/icons-react';
+import Login from '../pages/Login';
 
 const Header = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  function loginButton() {
+
+    if(isLoggedIn == false){
+      return(
+        <Popover>
+          <PopoverTrigger>
+            <Button 
+              size="sm" 
+              colorScheme="brand"
+            >
+              Login
+            </Button>
+          </PopoverTrigger>
+          <Portal>
+              <PopoverContent>
+                <PopoverArrow />
+                <PopoverBody shadow="md">
+                  <Login setIsLoggedIn={setIsLoggedIn}/>
+                </PopoverBody>
+              </PopoverContent>
+          </Portal>
+        </Popover>
+      )
+    }else{
+      return(
+        <h5>Bonjour!</h5>
+      )
+    }
+    
+  }
+
   return (
     <Box as="header" bg="white" boxShadow="sm" position="sticky" top={0} zIndex={10}>
       <Flex 
@@ -63,15 +104,7 @@ const Header = () => {
                 variant="ghost"
               />
             </Flex>
-
-            <Button 
-              size="sm" 
-              colorScheme="brand"
-              as={RouterLink}
-              to="/login"
-            >
-              Login
-            </Button>
+            {loginButton()}
           </Flex>
         </Flex>
       </Flex>

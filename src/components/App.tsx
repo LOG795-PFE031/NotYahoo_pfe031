@@ -24,7 +24,6 @@ const App: React.FC = () => {
           <Route path="/stock/:ticker" element={<StockDetails />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/advisor" element={<Advisor />} />
-          <Route path="/login" element={<Login />} />
         </Routes>
       </Box>
       
