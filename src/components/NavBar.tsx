@@ -1,23 +1,24 @@
 import React, { useState, FormEvent } from 'react';
 import successLogo from '../Assets/Success.jpg'; // adjust the path
 import '../css/NavBar.css';
-import { AuthServer } from '../clients/AuthServer';
+// import { AuthServer } from '../clients/AuthServer';
 import axios from 'axios';
 import Stock from './Stock';
 import News from './News';
+import Portfolio from './Portfolio';
 
-const authServer = new AuthServer('https://localhost:8081');
+// const authServer = new AuthServer('https://localhost:8081');
 
 const NavBar: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchTermFinal, setSearchTermFinal] = useState('');
+  const [currentPage, setCurrentPage] = useState('');
   const [showAccountModal, setShowAccountModal] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(true); // Set to true by default
 
   const [accountUsername, setAccountUsername] = useState('');
   const [accountPassword, setAccountPassword] = useState('');
   const [loginError, setLoginError] = useState('');
-
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -30,23 +31,23 @@ const NavBar: React.FC = () => {
     setShowAccountModal(!showAccountModal);
   };
 
-  const handleAccountLogin = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      const loginResponse = await authServer.login(accountUsername, accountPassword);
-      console.log('Login successful, token:', loginResponse);
-      // Optionally: Save token (e.g., localStorage) and close modal on success
-      axios.defaults.headers.common['Authorization'] = `Bearer ${loginResponse}`;
-      axios.defaults.headers.post['Content-Type'] = 'application/json';
-      setShowAccountModal(false);
-      setIsLoggedIn(true);
-      setSearchTerm("AAPL")
-      setSearchTermFinal("AAPL")
-    } catch (error: any) {
-      console.error('Login error:', error);
-      setLoginError(error.message || 'Login failed');
-    }
-  };
+  // const handleAccountLogin = async (e: FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault();
+  //   try {
+  //     const loginResponse = await authServer.login(accountUsername, accountPassword);
+  //     console.log('Login successful, token:', loginResponse);
+  //     // Optionally: Save token (e.g., localStorage) and close modal on success
+  //     axios.defaults.headers.common['Authorization'] = `Bearer ${loginResponse}`;
+  //     axios.defaults.headers.post['Content-Type'] = 'application/json';
+  //     setShowAccountModal(false);
+  //     setIsLoggedIn(true);
+  //     setSearchTerm("AAPL")
+  //     setSearchTermFinal("AAPL")
+  //   } catch (error: any) {
+  //     console.error('Login error:', error);
+  //     setLoginError(error.message || 'Login failed');
+  //   }
+  // };
 
   return (
     <>
@@ -54,6 +55,18 @@ const NavBar: React.FC = () => {
         {/* Left Section: Logo */}
         <div className="navbar__left">
           <img src={successLogo} alt="Success Logo" className="navbar__logo" />
+        </div>
+
+        <div className="navbar__left">
+            <button onClick={() => setCurrentPage("portfolio")} className="search-button">
+              Portfolio
+            </button>
+        </div>
+
+        <div className="navbar__left">
+            <button onClick={() => setCurrentPage("market")} className="search-button px-5">
+              Market
+            </button>
         </div>
 
         {/* Center Section: Search Bar */}
@@ -77,24 +90,39 @@ const NavBar: React.FC = () => {
           <a href="#home" className="nav-link">
             Home
           </a>
-          <button
+          {/* <button
             type="button"
             onClick={toggleAccountModal}
             className="nav-link button-link"
           >
             Account
-          </button>
+          </button> */}
         </div>
       </nav>
-      <Stock searchTerm={searchTermFinal} isLoggedIn={isLoggedIn}>
-
-      </Stock>
-      <News searchTerm={searchTermFinal} isLoggedIn={isLoggedIn}>
-
-      </News>
+      {
+        currentPage == "market" ? (
+          <Stock searchTerm={searchTermFinal} isLoggedIn={isLoggedIn} />
+        ) : (
+          <div></div>
+        )
+      }
+      {
+        currentPage == "market" ? (
+          <News searchTerm={searchTermFinal} isLoggedIn={isLoggedIn}/>
+        ) : (
+          <div></div>
+        )
+      }
+      {
+        currentPage == "portfolio" ? (
+          <Portfolio setSearchTermFinal={setSearchTermFinal} setSearchTerm={setSearchTerm} setCurrentPage={setCurrentPage} searchTerm={searchTermFinal} isLoggedIn={isLoggedIn} />
+        ) : (
+          <div></div>
+        )
+      }
 
       {/* Account Modal */}
-      {showAccountModal && (
+      {/* {showAccountModal && (
         <div className="modal-overlay" onClick={toggleAccountModal}>
           <div
             className="modal-content"
@@ -128,7 +156,7 @@ const NavBar: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
+      )} */}
     </>
   );
 };
