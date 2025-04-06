@@ -64,3 +64,4 @@ dist-ssr
 *.sw?
 bun.lock
 .env
+package-lock.json
