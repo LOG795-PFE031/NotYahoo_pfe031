@@ -19,7 +19,7 @@ import {
   StatArrow,
   Spinner,
   Center,
-  Link
+  
 } from '@chakra-ui/react';
 import { IconArrowUpRight, IconChartLine, IconNews, IconRobot } from '@tabler/icons-react';
 import { apiService } from '../../clients/ApiService';

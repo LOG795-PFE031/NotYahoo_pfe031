@@ -28,7 +28,7 @@ const Header = () => {
       >
         <Box fontWeight="bold" fontSize="xl">
           <ChakraLink as={RouterLink} to="/" _hover={{ textDecoration: 'none' }}>
-            FinTech Platform
+            Stock Companion
           </ChakraLink>
         </Box>
 

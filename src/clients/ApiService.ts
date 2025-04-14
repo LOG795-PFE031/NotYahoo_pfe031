@@ -55,6 +55,32 @@ export interface HistoricalData {
   };
 }
 
+// Define the real News API response type
+export interface NewsApiResponse {
+  symbol: string;
+  articles: Array<{
+    title: string;
+    url: string;
+    published_date: string;
+    source: string;
+    sentiment: "POSITIVE" | "NEGATIVE" | "NEUTRAL";
+    confidence: number;
+  }>;
+  total_articles: number;
+  sentiment_metrics: {
+    positive: number;
+    negative: number;
+    neutral: number;
+    average_confidence: number;
+  };
+  meta: {
+    message: string;
+    version: string;
+    documentation: string;
+    endpoints: string[];
+  };
+}
+
 // Create base API clients with default configurations
 const createApiClient = (baseURL: string): AxiosInstance => {
   return axios.create({
@@ -107,6 +133,99 @@ class ApiService {
       return response.data;
     } catch (error) {
       console.error(`Error fetching historical data for ${ticker}:`, error);
+      throw error;
+    }
+  }
+
+  // Get news data for a ticker
+  async getNewsData(ticker: string): Promise<{ 
+    articles: Array<{ 
+      title: string, 
+      publishedAt: string, 
+      opinion: number,
+      url?: string,
+      source?: string,
+      confidence?: number
+    }>,
+    sentiment_metrics?: {
+      positive: number,
+      negative: number,
+      neutral: number,
+      average_confidence: number
+    }
+  }> {
+    try {
+      console.log(`ApiService: Getting news data for ${ticker}`);
+      
+      try {
+        // Direct API call to the news endpoint
+        const response = await axios.get<NewsApiResponse>(`${import.meta.env.VITE_PREDICTION_SERVICE_URL || 'http://localhost:8000'}/api/data/news/${ticker}`);
+        console.log(`ApiService: Got news data for ${ticker}:`, response.data);
+        
+        // Transform API response to match our expected format
+        const articles = response.data.articles.map(article => ({
+          title: article.title,
+          publishedAt: article.published_date,
+          // Convert sentiment string to numeric opinion value
+          opinion: article.sentiment === "POSITIVE" ? 1 : 
+                  article.sentiment === "NEGATIVE" ? -1 : 0,
+          url: article.url,
+          source: article.source,
+          confidence: article.confidence
+        }));
+        
+        console.log(`ApiService: Transformed news data for ${ticker}:`, articles);
+        return { 
+          articles,
+          sentiment_metrics: response.data.sentiment_metrics
+        };
+      } catch (newsError) {
+        console.error(`ApiService: Error in news API call for ${ticker}:`, newsError);
+        
+        // Fallback to mock data if API call fails
+        console.log(`ApiService: Using mock data for ${ticker}`);
+        const mockArticles = [
+          {
+            title: `${ticker} Stock Shows Strong Performance in Recent Trading`,
+            publishedAt: new Date().toISOString(),
+            opinion: 1,
+            url: `https://finance.yahoo.com/quote/${ticker}`,
+            source: "Yahoo Finance",
+            confidence: 0.85
+          },
+          {
+            title: `Market Analysis: What's Next for ${ticker}?`,
+            publishedAt: new Date(Date.now() - 86400000).toISOString(), // Yesterday
+            opinion: 0,
+            url: `https://www.marketwatch.com/investing/stock/${ticker}`,
+            source: "MarketWatch",
+            confidence: 0.65
+          },
+          {
+            title: `Investors Concerned About ${ticker}'s Recent Announcement`,
+            publishedAt: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+            opinion: -1,
+            url: `https://www.investing.com/equities/${ticker.toLowerCase()}`,
+            source: "Investing.com",
+            confidence: 0.75
+          }
+        ];
+        
+        // Mock sentiment metrics
+        const mockMetrics = {
+          positive: 0.33,
+          negative: 0.33,
+          neutral: 0.34,
+          average_confidence: 0.75
+        };
+        
+        return { 
+          articles: mockArticles,
+          sentiment_metrics: mockMetrics
+        };
+      }
+    } catch (error) {
+      console.error(`ApiService: Error fetching news data for ${ticker}:`, error);
       throw error;
     }
   }
