@@ -9,6 +9,7 @@ import Portfolio from './pages/Portfolio.tsx';
 import Advisor from './pages/Advisor.tsx';
 import PortfolioPerformance from './pages/PortfolioPerformance.tsx';
 import News from './News.tsx';
+import Login from './pages/login.tsx';
 
 // Import layout components
 import Header from './layout/Header.tsx';
@@ -27,6 +28,7 @@ const App: React.FC = () => {
           <Route path="/portfolio/performance" element={<PortfolioPerformance />} />
           <Route path="/advisor" element={<Advisor />} />
           <Route path="/news" element={<News searchTerm="" isLoggedIn={false} />} />
+          <Route path="/login" element={<Login />} />
         </Routes>
       </Box>
       
