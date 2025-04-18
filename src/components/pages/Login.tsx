@@ -50,26 +50,23 @@ const Login: React.FC = () => {
     try {
       console.log('Attempting login with server:', import.meta.env.VITE_API_AUTH_URL || 'https://localhost:55604');
       
-      let token;
       const errorDetails = [];
       
       // Try standard login method first (non-encrypted)
       try {
         console.log('Trying standard login method...');
-        token = await authServer.login(username, password);
+        await authServer.login(username, password);
         console.log('Standard login successful!');
       } catch (firstError) {
         errorDetails.push(`Standard method failed: ${firstError instanceof Error ? firstError.message : 'Unknown error'}`);
         console.log('Standard login failed, trying encrypted method...', firstError);
         
         // If standard method fails, try encrypted
-        token = await authServer.loginEncrypted(username, password);
+        await authServer.loginEncrypted(username, password);
         console.log('Encrypted login successful!');
       }
       
-      // If we get here, one of the methods succeeded
-      // Store the token in localStorage
-      localStorage.setItem('authToken', token);
+      // Token and user info are already saved in the login methods
       
       toast({
         title: 'Login Successful',

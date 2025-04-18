@@ -1,8 +1,7 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
 import successLogo from '../Assets/Success.jpg'; // adjust the path
 import '../css/NavBar.css';
 import { AuthServer } from '../clients/AuthServer';
-import axios from 'axios';
 import Stock from './Stock';
 import News from './News';
 import Portfolio from './Portfolio';
@@ -14,11 +13,24 @@ const NavBar: React.FC = () => {
   const [searchTermFinal, setSearchTermFinal] = useState('');
   const [currentPage, setCurrentPage] = useState('');
   const [showAccountModal, setShowAccountModal] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // Set to true by default
+  const [showUserProfileModal, setShowUserProfileModal] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
 
   const [accountUsername, setAccountUsername] = useState('');
   const [accountPassword, setAccountPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+
+  // Check if user is already logged in on component mount
+  useEffect(() => {
+    if (AuthServer.isAuthenticated()) {
+      setIsLoggedIn(true);
+      const savedUsername = AuthServer.getUsername();
+      if (savedUsername) {
+        setUsername(savedUsername);
+      }
+    }
+  }, []);
 
   const handleSearch = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,22 +43,35 @@ const NavBar: React.FC = () => {
     setShowAccountModal(!showAccountModal);
   };
 
+  const toggleUserProfileModal = () => {
+    setShowUserProfileModal(!showUserProfileModal);
+  };
+
   const handleAccountLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
       const loginResponse = await authServer.login(accountUsername, accountPassword);
       console.log('Login successful, token:', loginResponse);
-      // Optionally: Save token (e.g., localStorage) and close modal on success
-      axios.defaults.headers.common['Authorization'] = `Bearer ${loginResponse}`;
-      axios.defaults.headers.post['Content-Type'] = 'application/json';
+      
       setShowAccountModal(false);
       setIsLoggedIn(true);
+      setUsername(accountUsername);
       setSearchTerm("AAPL")
       setSearchTermFinal("AAPL")
     } catch (error: Error | unknown) {
       console.error('Login error:', error);
       setLoginError(error instanceof Error ? error.message : 'Login failed');
     }
+  };
+
+  const handleLogout = () => {
+    // Use the AuthServer to handle logout
+    AuthServer.logout();
+    
+    // Update component state
+    setIsLoggedIn(false);
+    setUsername('');
+    setShowUserProfileModal(false);
   };
 
   return (
@@ -90,13 +115,25 @@ const NavBar: React.FC = () => {
           <a href="#home" className="nav-link">
             Home
           </a>
-          <button
-            type="button"
-            onClick={toggleAccountModal}
-            className="nav-link button-link"
-          >
-            Account
-          </button>
+          {isLoggedIn ? (
+            <div className="user-profile">
+              <span 
+                className="username" 
+                onClick={toggleUserProfileModal}
+                style={{ cursor: 'pointer' }}
+              >
+                Welcome, {username}
+              </span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={toggleAccountModal}
+              className="nav-link button-link"
+            >
+              Login
+            </button>
+          )}
         </div>
       </nav>
       {
@@ -122,7 +159,7 @@ const NavBar: React.FC = () => {
       }
 
       {/* Account Modal */}
-      {showAccountModal && (
+      {showAccountModal && !isLoggedIn && (
         <div className="modal-overlay" onClick={toggleAccountModal}>
           <div
             className="modal-content"
@@ -157,6 +194,54 @@ const NavBar: React.FC = () => {
           </div>
         </div>
       )}  
+
+      {/* User Profile Modal */}
+      {showUserProfileModal && isLoggedIn && (
+        <div className="modal-overlay" onClick={toggleUserProfileModal}>
+          <div
+            className="modal-content user-profile-modal"
+            onClick={(e) => e.stopPropagation()} // Prevent modal close when clicking inside
+          >
+            <button className="modal-close" onClick={toggleUserProfileModal}>
+              &times;
+            </button>
+            <h2>User Profile</h2>
+            
+            <div className="user-info">
+              <div className="user-info-row">
+                <span className="info-label">Username:</span>
+                <span className="info-value">{username}</span>
+              </div>
+              <div className="user-info-row">
+                <span className="info-label">Status:</span>
+                <span className="info-value">Logged In</span>
+              </div>
+              <div className="user-info-row">
+                <span className="info-label">Session:</span>
+                <span className="info-value">Active</span>
+              </div>
+            </div>
+
+            <div className="user-actions">
+              <button 
+                className="user-action-button profile-button"
+                onClick={() => {
+                  toggleUserProfileModal();
+                  // Navigate to profile page if needed
+                }}
+              >
+                View Full Profile
+              </button>
+              <button 
+                className="user-action-button logout-button"
+                onClick={handleLogout}
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

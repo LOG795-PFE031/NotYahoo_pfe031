@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
   Flex,
@@ -11,11 +11,36 @@ import {
   Menu,
   MenuButton,
   MenuList,
-  MenuItem
+  MenuItem,
+  Avatar,
+  Text
 } from '@chakra-ui/react';
-import { IconSearch, IconChevronDown } from '@tabler/icons-react';
+import { IconSearch, IconChevronDown, IconUser, IconLogout, IconSettings } from '@tabler/icons-react';
+import { AuthServer } from '../../clients/AuthServer';
 
 const Header = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check authentication state on component mount
+    if (AuthServer.isAuthenticated()) {
+      setIsLoggedIn(true);
+      const savedUsername = AuthServer.getUsername();
+      if (savedUsername) {
+        setUsername(savedUsername);
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    AuthServer.logout();
+    setIsLoggedIn(false);
+    setUsername('');
+    navigate('/');
+  };
+
   return (
     <Box as="header" bg="white" boxShadow="sm" position="sticky" top={0} zIndex={10}>
       <Flex 
@@ -60,7 +85,7 @@ const Header = () => {
             </ChakraLink>
           </Stack>
 
-          <Flex gap={2}>
+          <Flex gap={2} align="center">
             <Flex position="relative" display={{ base: 'none', md: 'flex' }}>
               <Input 
                 placeholder="Search..." 
@@ -80,14 +105,42 @@ const Header = () => {
               />
             </Flex>
 
-            <Button 
-              size="sm" 
-              colorScheme="brand"
-              as={RouterLink}
-              to="/login"
-            >
-              Login
-            </Button>
+            {isLoggedIn ? (
+              <Menu>
+                <MenuButton
+                  as={Button}
+                  size="sm"
+                  variant="outline"
+                  colorScheme="brand"
+                  rightIcon={<IconChevronDown size={14} />}
+                >
+                  <Flex align="center" gap={2}>
+                    <Avatar size="xs" name={username} bg="brand.500" />
+                    <Text fontSize="sm" display={{ base: 'none', md: 'block' }}>{username}</Text>
+                  </Flex>
+                </MenuButton>
+                <MenuList>
+                  <MenuItem icon={<IconUser size={18} />}>
+                    Profile
+                  </MenuItem>
+                  <MenuItem icon={<IconSettings size={18} />}>
+                    Settings
+                  </MenuItem>
+                  <MenuItem icon={<IconLogout size={18} />} onClick={handleLogout}>
+                    Logout
+                  </MenuItem>
+                </MenuList>
+              </Menu>
+            ) : (
+              <Button 
+                size="sm" 
+                colorScheme="brand"
+                as={RouterLink}
+                to="/login"
+              >
+                Login
+              </Button>
+            )}
           </Flex>
         </Flex>
       </Flex>

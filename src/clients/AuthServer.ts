@@ -1,7 +1,10 @@
 import forge from 'node-forge';
+import axios from 'axios';
 
 export class AuthServer {
     private baseUrl: string;
+    private static readonly TOKEN_KEY = 'authToken';
+    private static readonly USERNAME_KEY = 'username';
 
     constructor(baseUrl: string) {
       this.baseUrl = baseUrl;
@@ -42,6 +45,10 @@ export class AuthServer {
         
             const token = await response.text();
             console.log('Got token, length:', token.length);
+
+            // Save token to localStorage and set in axios
+            AuthServer.setAuthToken(token);
+            AuthServer.setUsername(username);
 
             console.log('Validating token...');
             const validationResponse = await fetch(`${this.baseUrl}/user/validate`, {
@@ -116,6 +123,10 @@ export class AuthServer {
             const token = await response.text();
             console.log('[Encrypted] Got token');
 
+            // Save token to localStorage and set in axios
+            AuthServer.setAuthToken(token);
+            AuthServer.setUsername(username);
+
             const validationResponse = await fetch(`${this.baseUrl}/user/validate`, {
                 method: 'GET',
                 headers: {
@@ -133,6 +144,91 @@ export class AuthServer {
         } catch (error) {
             console.error('[Encrypted] AuthServer login error:', error);
             throw error;
+        }
+    }
+
+    /**
+     * Set the authentication token and configure axios with it
+     */
+    public static setAuthToken(token: string): void {
+        // Save token to localStorage
+        localStorage.setItem(this.TOKEN_KEY, token);
+        
+        // Set token in axios default headers for all future requests
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
+
+    /**
+     * Set the username in localStorage
+     */
+    public static setUsername(username: string): void {
+        localStorage.setItem(this.USERNAME_KEY, username);
+    }
+
+    /**
+     * Get the current authentication token
+     */
+    public static getAuthToken(): string | null {
+        return localStorage.getItem(this.TOKEN_KEY);
+    }
+
+    /**
+     * Get the current username
+     */
+    public static getUsername(): string | null {
+        return localStorage.getItem(this.USERNAME_KEY);
+    }
+
+    /**
+     * Check if user is authenticated (has a token)
+     */
+    public static isAuthenticated(): boolean {
+        return !!this.getAuthToken();
+    }
+
+    /**
+     * Remove the auth token and clear axios headers
+     */
+    public static logout(): void {
+        localStorage.removeItem(this.TOKEN_KEY);
+        localStorage.removeItem(this.USERNAME_KEY);
+        delete axios.defaults.headers.common['Authorization'];
+    }
+
+    /**
+     * Initialize the auth state from localStorage (call this when the app starts)
+     */
+    public static initializeAuth(): void {
+        const token = this.getAuthToken();
+        if (token) {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+    }
+
+    /**
+     * Decode and parse the JWT token to get user information
+     */
+    public static decodeToken(): Record<string, unknown> | null {
+        const token = this.getAuthToken();
+        if (!token) return null;
+
+        try {
+            // Split the token and get the payload section
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            
+            // Decode the payload
+            const jsonPayload = decodeURIComponent(
+                atob(base64)
+                    .split('')
+                    .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+            );
+
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            console.error('Error decoding token:', e);
+            return null;
         }
     }
 }
