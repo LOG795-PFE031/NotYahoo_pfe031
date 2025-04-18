@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import StockHistoryChart from '../models/StockHistoryChart'; // from above
+import StockHistoryChart from '../models/StockHistoryChart';
 import axios from 'axios';
 
 type StockDataPoint = {
@@ -13,55 +13,47 @@ type params = {
   isLoggedIn: boolean
 };
 
-const Stock: React.FC<params> = ({ searchTerm,isLoggedIn }) => {
+const Stock: React.FC<params> = ({ searchTerm, isLoggedIn }) => {
   const [stockData, setStockData] = useState<StockDataPoint[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoggedIn) return
-    // Example: fetch data from an API or mocked JSON
-    // For demonstration, let's just simulate with a setTimeout
+    if (!isLoggedIn || !searchTerm) return;
+    
     const fetchData = async () => {
       try {
-        const live = new Date().toISOString()
-        const response = await axios.get("https://localhost:8081/stocks/" + searchTerm + "/" + live);
+        setLoading(true);
+        const apiUrl = import.meta.env.VITE_API_STOCKS_URL || 'https://localhost:55611';
+        const live = new Date().toISOString();
+        const response = await axios.get(`${apiUrl}/stocks/${searchTerm}/${live}`);
 
-        const formattedData = [{date: live, close: response.data.value, volume:0}]
-
-        setStockData(formattedData);
-        // Mock data
-        
+        if (response.data && response.data.value) {
+          const formattedData = [{
+            date: live, 
+            close: response.data.value, 
+            volume: 0
+          }];
+          setStockData(formattedData);
+        } else {
+          throw new Error('Invalid response format from API');
+        }
       } catch (err) {
-        //setError('Failed to fetch data');
-        const simulatedData: StockDataPoint[] = [
-          { date: '2025-02-18T18:23:59.469154', close: 190.289143, volume: 9000 },
-          { date: '2025-02-18T18:53:59.469154', close: 189.311999, volume: 9000 },
-          { date: '2025-02-18T19:23:59.469154', close: 188.427231, volume: 9000 },
-          { date: '2025-02-18T19:53:59.469154', close: 188.167850, volume: 9000 },
-          { date: '2025-02-18T20:23:59.469154', close: 188.074236, volume: 9000 },
-          { date: '2025-02-18T20:53:59.469154', close: 191.080997, volume: 9000 },
-          { date: '2025-02-18T21:23:59.469154', close: 189.575534, volume: 9000 },
-          { date: '2025-02-18T21:53:59.469154', close: 190.376600, volume: 9000 },
-          { date: '2025-02-18T22:23:59.469154', close: 188.879733, volume: 9000 },
-          { date: '2025-02-18T22:53:59.469154', close: 188.437963, volume: 9000 },
-        ];
-
-        // Simulate API call
-        //await new Promise((resolve) => setTimeout(resolve, 1000));
-        setStockData(simulatedData);
-        //setError('Failed to fetch data');
+        console.error('Error fetching stock data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch stock data');
+        setStockData([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [searchTerm,isLoggedIn]);
+  }, [searchTerm, isLoggedIn]);
 
   if (!isLoggedIn) return <div>Please log in to see the stocks.</div>;
   if (loading) return <div>Loading stock data...</div>;
   if (error) return <div>Error: {error}</div>;
+  if (stockData.length === 0) return <div>No data available for {searchTerm}</div>;
 
   return (
     <div style={{ padding: '20px' }}>

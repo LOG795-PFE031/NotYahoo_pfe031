@@ -76,6 +76,9 @@ const Login: React.FC = () => {
         isClosable: true,
       });
       
+      // Notify other components about auth state change
+      window.dispatchEvent(new Event('authStateChange'));
+      
       // Redirect to dashboard
       navigate('/');
     } catch (error) {

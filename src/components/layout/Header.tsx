@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Flex,
@@ -18,26 +18,50 @@ import {
 import { IconSearch, IconChevronDown, IconUser, IconLogout, IconSettings } from '@tabler/icons-react';
 import { AuthServer } from '../../clients/AuthServer';
 
+// Add custom event for auth state changes
+const authStateChangeEvent = new Event('authStateChange');
+
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
 
-  useEffect(() => {
-    // Check authentication state on component mount
+  // Function to check authentication status
+  const checkAuthStatus = () => {
     if (AuthServer.isAuthenticated()) {
       setIsLoggedIn(true);
       const savedUsername = AuthServer.getUsername();
       if (savedUsername) {
         setUsername(savedUsername);
       }
+    } else {
+      setIsLoggedIn(false);
+      setUsername('');
     }
-  }, []);
+  };
+
+  // Check auth status on component mount and route changes
+  useEffect(() => {
+    checkAuthStatus();
+    
+    // Add event listener for auth state changes
+    window.addEventListener('authStateChange', checkAuthStatus);
+    
+    // Clean up event listener on unmount
+    return () => {
+      window.removeEventListener('authStateChange', checkAuthStatus);
+    };
+  }, [location.pathname]); // Re-check when route changes
 
   const handleLogout = () => {
     AuthServer.logout();
     setIsLoggedIn(false);
     setUsername('');
+    
+    // Dispatch event to notify other components
+    window.dispatchEvent(authStateChangeEvent);
+    
     navigate('/');
   };
 

@@ -81,6 +81,8 @@ export interface NewsApiResponse {
   };
 }
 
+
+
 // Create base API clients with default configurations
 const createApiClient = (baseURL: string): AxiosInstance => {
   return axios.create({
