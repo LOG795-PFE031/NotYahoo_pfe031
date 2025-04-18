@@ -48,7 +48,7 @@ interface ConversationEntry {
 }
 
 interface ApiResponse {
-  data: ConversationEntry[];
+  data: ConversationEntry[];                                
 }
 
 // Function definition for updating profile

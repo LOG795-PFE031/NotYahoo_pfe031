@@ -7,7 +7,7 @@ import Stock from './Stock';
 import News from './News';
 import Portfolio from './Portfolio';
 
-const authServer = new AuthServer('http://localhost:55604');
+const authServer = new AuthServer('https://localhost:55604');
 
 const NavBar: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,9 +43,9 @@ const NavBar: React.FC = () => {
       setIsLoggedIn(true);
       setSearchTerm("AAPL")
       setSearchTermFinal("AAPL")
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error('Login error:', error);
-      setLoginError(error.message || 'Login failed');
+      setLoginError(error instanceof Error ? error.message : 'Login failed');
     }
   };
 

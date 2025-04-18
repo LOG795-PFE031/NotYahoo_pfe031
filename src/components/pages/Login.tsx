@@ -48,8 +48,26 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const token = await authServer.login(username, password); 
+      console.log('Attempting login with server:', import.meta.env.VITE_API_AUTH_URL || 'https://localhost:55604');
       
+      let token;
+      const errorDetails = [];
+      
+      // Try standard login method first (non-encrypted)
+      try {
+        console.log('Trying standard login method...');
+        token = await authServer.login(username, password);
+        console.log('Standard login successful!');
+      } catch (firstError) {
+        errorDetails.push(`Standard method failed: ${firstError instanceof Error ? firstError.message : 'Unknown error'}`);
+        console.log('Standard login failed, trying encrypted method...', firstError);
+        
+        // If standard method fails, try encrypted
+        token = await authServer.loginEncrypted(username, password);
+        console.log('Encrypted login successful!');
+      }
+      
+      // If we get here, one of the methods succeeded
       // Store the token in localStorage
       localStorage.setItem('authToken', token);
       
@@ -64,10 +82,16 @@ const Login: React.FC = () => {
       // Redirect to dashboard
       navigate('/');
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('All login attempts failed:', error);
+      
+      let errorMessage = 'An unknown error occurred';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: 'Login Failed',
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: errorMessage,
         status: 'error',
         duration: 5000,
         isClosable: true,
