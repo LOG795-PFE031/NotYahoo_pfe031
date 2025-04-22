@@ -9,7 +9,7 @@ import Portfolio from './pages/Portfolio.tsx';
 import Advisor from './pages/Advisor.tsx';
 import PortfolioPerformance from './pages/PortfolioPerformance.tsx';
 import News from './News.tsx';
-import Login from './pages/login.tsx';
+import Login from './pages/Login.tsx';
 
 // Import layout components
 import Header from './layout/Header.tsx';

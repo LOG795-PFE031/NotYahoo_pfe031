@@ -104,7 +104,7 @@ const Portfolio: React.FC<params> = ({ setSearchTermFinal,setSearchTerm,setCurre
 
         try {
             setLoading(true);
-            const apiUrl = import.meta.env.VITE_API_URL || 'https://localhost:8081';
+            const apiUrl = import.meta.env.VITE_API_PORTFOLIO_URL || 'https://localhost:55616';
             await axios.patch(`${apiUrl}/portfolio/buy/${selectedSymbol}/${transactionVolume}`);
             
             onBuyClose();
@@ -159,7 +159,7 @@ const Portfolio: React.FC<params> = ({ setSearchTermFinal,setSearchTerm,setCurre
 
         try {
             setLoading(true);
-            const apiUrl = import.meta.env.VITE_API_URL || 'https://localhost:8081';
+            const apiUrl = import.meta.env.VITE_API_PORTFOLIO_URL || 'https://localhost:55616';
             await axios.patch(`${apiUrl}/portfolio/sell/${selectedSymbol}/${transactionVolume}`);
             
             onSellClose();

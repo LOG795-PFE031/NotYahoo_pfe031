@@ -1,5 +1,6 @@
 import forge from 'node-forge';
 import axios from 'axios';
+import { chatbotService } from './ChatbotService';
 
 export class AuthServer {
     private baseUrl: string;
@@ -65,6 +66,16 @@ export class AuthServer {
             }
 
             console.log('Token validated successfully');
+            
+            // Initialize or restore chat session with ChatbotService
+            try {
+                await chatbotService.handleLogin(username, token);
+                console.log('Chat session initialized for user:', username);
+            } catch (error) {
+                console.error('Failed to initialize chat session:', error);
+                // Continue with login even if chat session fails
+            }
+            
             return token;
         } catch (error) {
             console.error('AuthServer login error:', error);
@@ -190,6 +201,20 @@ export class AuthServer {
      * Remove the auth token and clear axios headers
      */
     public static logout(): void {
+        const username = this.getUsername();
+        if (username) {
+            // Save chat history before logging out
+            try {
+                chatbotService.handleLogout().then(() => {
+                    console.log('Chat session ended and saved for user:', username);
+                }).catch(error => {
+                    console.error('Error ending chat session:', error);
+                });
+            } catch (error) {
+                console.error('Failed to end chat session:', error);
+            }
+        }
+        
         localStorage.removeItem(this.TOKEN_KEY);
         localStorage.removeItem(this.USERNAME_KEY);
         delete axios.defaults.headers.common['Authorization'];
