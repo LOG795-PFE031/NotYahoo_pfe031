@@ -222,10 +222,10 @@ const StockDetails: React.FC = () => {
               {prediction ? (
                 <Stat>
                   <StatLabel fontSize="md">Tomorrow's predicted price</StatLabel>
-                  <StatNumber fontSize="3xl">${prediction.prediction.toFixed(2)}</StatNumber>
+                  <StatNumber fontSize="3xl">${prediction.predicted_price.toFixed(2)}</StatNumber>
                   <StatHelpText>
                     <Flex align="center" justify="space-between">
-                      <Text>Confidence: {(prediction.confidence_score * 100).toFixed(1)}%</Text>
+                      <Text>Confidence: {(prediction.confidence * 100).toFixed(1)}%</Text>
                       <Text fontSize="sm" color="gray.500">Model: {prediction.model_type}</Text>
                     </Flex>
                   </StatHelpText>
@@ -279,8 +279,8 @@ const StockDetails: React.FC = () => {
                 <Heading size="sm" mb={2}>Price Prediction Insight</Heading>
                 <Text>
                   Based on our {prediction.model_type} model, we predict that {ticker} will be priced at 
-                  ${prediction.prediction.toFixed(2)} on {new Date(prediction.timestamp).toLocaleDateString()}. 
-                  This prediction has a confidence score of {(prediction.confidence_score * 100).toFixed(1)}%.
+                  ${prediction.predicted_price.toFixed(2)} on {new Date(prediction.timestamp).toLocaleDateString()}. 
+                  This prediction has a confidence score of {(prediction.confidence * 100).toFixed(1)}%.
                 </Text>
               </Box>
             )}
@@ -373,9 +373,6 @@ const StockDetails: React.FC = () => {
                     </Heading>
                     <Text fontSize="sm" color="gray.600" mb={2}>
                       {new Date(article.date).toLocaleDateString()} 
-                    </Text>
-                    <Text noOfLines={3} mb={3}>
-                      {article.content}
                     </Text>
                     <Flex justify="space-between">
                       <Badge 
