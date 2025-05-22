@@ -519,7 +519,7 @@ export class ChatbotService {
     try {
       this.model = new ChatOpenAI({
         openAIApiKey: this.apiKey,
-        modelName: "gpt-4",
+        modelName: "gpt-4.1",
         temperature: 0.7,
         streaming: true,
       });
