@@ -10,7 +10,6 @@ export interface SentimentAnalysis {
   url: string;
   title: string;
   ticker: string;
-  content: string;
   date: string;
   sentiment_scores: SentimentScore;
 }
@@ -81,13 +80,11 @@ export interface NewsApiResponse {
   };
 }
 
-
-
 // Create base API clients with default configurations
 const createApiClient = (baseURL: string): AxiosInstance => {
   return axios.create({
     baseURL,
-    timeout: 10000, // 10 seconds timeout
+    timeout: 100000, // 100 seconds timeout
     headers: {
       'Content-Type': 'application/json',
     },
@@ -108,7 +105,7 @@ class ApiService {
   // Get stock prediction for a ticker
   async getStockPrediction(ticker: string): Promise<StockPrediction> {
     try {
-      const response = await predictionServiceClient.get<StockPrediction>(`/docs/${ticker}`);
+      const response = await predictionServiceClient.get<StockPrediction>(`/api/predict/${ticker}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching stock prediction for ${ticker}:`, error);
@@ -118,13 +115,25 @@ class ApiService {
 
   // Get sentiment analysis for a ticker
   async getSentimentAnalysis(ticker: string): Promise<SentimentAnalysis[]> {
+
     try {
-      const response = await sentimentServiceClient.get<SentimentAnalysis[]>(`/analyze/${ticker}`);
-      return response.data;
+      const response = await this.getNewsData(ticker);
+      return response.articles.map((article: any) => ({
+        url: article.url,
+        title: article.title,
+        ticker: ticker,
+        date: article.publishedAt,
+        sentiment_scores: {
+          positive: article.opinion == 1 ? article.confidence : 0,
+          neutral: article.opinion == 0 ? article.confidence: 0,
+          negative: article.opinion == -1 ? article.confidence : 0
+        }
+      }));
     } catch (error) {
-      console.error(`Error fetching sentiment analysis for ${ticker}:`, error);
-      throw error;
+      console.error(`ApiService: Failed to get sentiment analysis for ${ticker}:`, error);
+      return []; // Return empty list on failure
     }
+
   }
 
   // Fetch historical stock data
