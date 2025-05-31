@@ -35,7 +35,8 @@ import {
   AreaChart,
   Area
 } from 'recharts';
-import apiService, { StockPrediction, SentimentAnalysis } from '../../clients/ApiService';
+import apiService, { StockPrediction, SentimentAnalysis, StockData } from '../../clients/ApiService';
+import { getBusinessDateRange } from '../../utils/dateUtils';
 
 const StockDetails: React.FC = () => {
   const { ticker } = useParams<{ ticker: string }>();
@@ -44,7 +45,7 @@ const StockDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [prediction, setPrediction] = useState<StockPrediction | null>(null);
   const [sentimentData, setSentimentData] = useState<SentimentAnalysis[]>([]);
-  const [historicalData, setHistoricalData] = useState<any[]>([]);
+  const [historicalData, setHistoricalData] = useState<{date: string, price: number, volume:number}[]>([]);
   const [error, setError] = useState('');
   
   useEffect(() => {
@@ -63,9 +64,11 @@ const StockDetails: React.FC = () => {
         const sentimentAnalysis = await apiService.getSentimentAnalysis(ticker);
         setSentimentData(sentimentAnalysis);
         
-        // Fetch historical data (mock for now)
-        const mockHistoricalData = generateMockHistoricalData();
-        setHistoricalData(mockHistoricalData);
+        // Fetch historical data
+        const { startDate, endDate } = getBusinessDateRange();
+        const historicalData = await apiService.getStockDataHistory(ticker, startDate, endDate);
+        const formattedHistoricalData = formatHistoricalData(historicalData.data);
+        setHistoricalData(formattedHistoricalData);
         
         setLoading(false);
       } catch (err) {
@@ -86,26 +89,13 @@ const StockDetails: React.FC = () => {
     fetchData();
   }, [ticker, toast]);
   
-  // Helper to generate mock historical data
-  const generateMockHistoricalData = () => {
-    const today = new Date();
-    const data = [];
-    
-    for (let i = 30; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(today.getDate() - i);
-      
-      // Generate a semi-realistic stock price pattern
-      const basePrice = 150;
-      const noise = Math.sin(i * 0.5) * 10 + Math.random() * 5 - 2.5;
-      const trend = i * 0.2;
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        price: basePrice + noise + trend,
-        volume: Math.floor(Math.random() * 10000000) + 5000000,
-      });
-    }
+  // Helper to format the historical data into the correct format
+  const formatHistoricalData = (rawHistoricalData: StockData[]) => {
+    const data = rawHistoricalData.map(entry => ({
+      date: entry.Date.split('T')[0],          // Extract YYYY-MM-DD
+      price: entry.Close,                      // Using 'Close' as the price
+      volume: entry.Volume,
+    }));
     
     return data;
   };
@@ -221,7 +211,7 @@ const StockDetails: React.FC = () => {
               <Heading size="md" mb={4}>Price Prediction</Heading>
               {prediction ? (
                 <Stat>
-                  <StatLabel fontSize="md">Tomorrow's predicted price</StatLabel>
+                  <StatLabel fontSize="md">Next trading day's predicted price</StatLabel>
                   <StatNumber fontSize="3xl">${prediction.predicted_price.toFixed(2)}</StatNumber>
                   <StatHelpText>
                     <Flex align="center" justify="space-between">
@@ -279,7 +269,7 @@ const StockDetails: React.FC = () => {
                 <Heading size="sm" mb={2}>Price Prediction Insight</Heading>
                 <Text>
                   Based on our {prediction.model_type} model, we predict that {ticker} will be priced at 
-                  ${prediction.predicted_price.toFixed(2)} on {new Date(prediction.timestamp).toLocaleDateString()}. 
+                  ${prediction.predicted_price.toFixed(2)} on {new Date(prediction.date).toLocaleDateString()}. 
                   This prediction has a confidence score of {(prediction.confidence * 100).toFixed(1)}%.
                 </Text>
               </Box>
