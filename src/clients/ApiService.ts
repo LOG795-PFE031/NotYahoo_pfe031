@@ -16,54 +16,55 @@ export interface SentimentAnalysis {
 
 export interface StockPrediction {
   symbol: string;
-  price: number;
-  timestamp: string;
-  confidence_score: number;
+  date: string;
+  predicted_price: number;
+  confidence: number;
   model_type: string;
 }
 
-export interface HistoricalData {
-  chart: {
-    result: Array<{
-      meta: {
-        currency: string;
-        symbol: string;
-        exchangeName: string;
-        instrumentType: string;
-        firstTradeDate: number;
-        regularMarketTime: number;
-        gmtoffset: number;
-        timezone: string;
-        exchangeTimezoneName: string;
-      };
-      timestamp: number[];
-      indicators: {
-        quote: Array<{
-          high: number[];
-          low: number[];
-          open: number[];
-          close: number[];
-          volume: number[];
-        }>;
-        adjclose?: Array<{
-          adjclose: number[];
-        }>;
-      };
-    }>;
-    error: null | string;
+// Interface for individual stock data
+export interface StockData {
+  Date: string;
+  Open: number;
+  High: number;
+  Low: number;
+  Close: number;
+  Volume: number;
+  Dividends: number;
+  'Stock Splits': number;
+  Returns: number;
+  MA_5: number;
+  MA_20: number;
+  Volatility: number | null;
+  RSI: number;
+  MACD: number;
+  MACD_Signal: number;
+  'Adj Close': number;
+}
+
+// Interface for historical stock data
+export interface StockDataHistory {
+  symbol: string;
+  data: StockData[];
+  meta: {
+    message: string;
+    version: string;
+    documentation: string;
+    endpoints: string[];
   };
+  timestamp: string;
 }
 
 // Define the real News API response type
 export interface NewsApiResponse {
   symbol: string;
   articles: Array<{
-    title: string;
-    url: string;
+    confidence: number;
+    sentiment: string;
     published_date: string;
     source: string;
-    sentiment: "POSITIVE" | "NEGATIVE" | "NEUTRAL";
-    confidence: number;
+    title: string;
+    url: string;
   }>;
   total_articles: number;
   sentiment_metrics: {
@@ -79,6 +80,15 @@ export interface NewsApiResponse {
     endpoints: string[];
   };
 }
+
+export interface NewsData {
+    title: string;
+    publishedAt: string;
+    opinion: number;
+    url: string;
+    source: string;
+    confidence: number;
+};
 
 // Create base API clients with default configurations
 const createApiClient = (baseURL: string): AxiosInstance => {
@@ -96,16 +106,15 @@ const predictionServiceClient = createApiClient(
   import.meta.env.VITE_PREDICTION_SERVICE_URL || 'http://localhost:8000'
 );
 
-// Sentiment analysis service client
-const sentimentServiceClient = createApiClient(
-  import.meta.env.VITE_SENTIMENT_SERVICE_URL || 'http://localhost:8092'
+const dataServiceClient = createApiClient(
+  import.meta.env.VITE_DATA_SERVICE_URL || 'http://localhost:8000'
 );
 
 class ApiService {
   // Get stock prediction for a ticker
   async getStockPrediction(ticker: string): Promise<StockPrediction> {
     try {
-      const response = await predictionServiceClient.get<StockPrediction>(`/api/predict/${ticker}`);
+      const response = await predictionServiceClient.get(`/api/predict/${ticker}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching stock prediction for ${ticker}:`, error);
@@ -118,7 +127,7 @@ class ApiService {
 
     try {
       const response = await this.getNewsData(ticker);
-      return response.articles.map((article: any) => ({
+      return response.articles.map((article: NewsData) => ({
         url: article.url,
         title: article.title,
         ticker: ticker,
@@ -136,28 +145,24 @@ class ApiService {
 
   }
 
-  // Fetch historical stock data
-  async getHistoricalData(ticker: string, period: string = '1y', interval: string = '1d'): Promise<HistoricalData> {
+  // Fetch stock data
+  async getStockDataHistory(ticker: string, start_date: string = "", end_date: string = ""): Promise<StockDataHistory> {
     try {
-      // This could be another microservice in the future
-      const response = await axios.get<HistoricalData>(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?range=${period}&interval=${interval}`);
+      const hasDateRange = start_date && end_date;
+      const query = hasDateRange ? `?start_date=${start_date}&end_date=${end_date}` : "";
+      const url = `/api/data/stock/${ticker}${query}`;
+
+      const response = await dataServiceClient.get<StockDataHistory>(url);
       return response.data;
     } catch (error) {
-      console.error(`Error fetching historical data for ${ticker}:`, error);
+      console.error(`Error fetching stock data for ${ticker}:`, error);
       throw error;
     }
   }
 
   // Get news data for a ticker
   async getNewsData(ticker: string): Promise<{ 
-    articles: Array<{ 
-      title: string, 
-      publishedAt: string, 
-      opinion: number,
-      url?: string,
-      source?: string,
-      confidence?: number
-    }>,
+    articles: Array<NewsData>,
     sentiment_metrics?: {
       positive: number,
       negative: number,
