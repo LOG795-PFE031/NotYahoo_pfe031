@@ -7,7 +7,12 @@ import { isWeekend, subDays, format } from 'date-fns';
  * @returns {{ startDate: string, endDate: string }} - Formatted start and end dates.
  */
 export function getBusinessDateRange(days: number = 30) : { startDate: string; endDate: string } {
-  const end = new Date();
+  let end = new Date();
+
+  // Adjust end to the most recent business day if today is a weekend 
+   while (isWeekend(end))
+    end = subDays(end, 1)
+
   let current = new Date(end);
   let count = 0;
 
