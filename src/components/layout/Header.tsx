@@ -24,6 +24,7 @@ const authStateChangeEvent = new Event('authStateChange');
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState('');
+  const [searchedTicker, setSearchedTicker] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -116,6 +117,8 @@ const Header = () => {
                 size="sm" 
                 width="auto" 
                 borderRadius="md"
+                value={searchedTicker}
+                onChange={(e)=>setSearchedTicker(e.target.value)}
               />
               <IconButton
                 icon={<IconSearch size={18} />}
@@ -126,6 +129,7 @@ const Header = () => {
                 top={1}
                 zIndex={2}
                 variant="ghost"
+                onClick={()=>navigate(`/stock/${searchedTicker.toUpperCase()}`)}
               />
             </Flex>
 
