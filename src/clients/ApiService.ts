@@ -112,13 +112,14 @@ const dataServiceClient = createApiClient(
 
 class ApiService {
   // Get stock prediction for a ticker
-  async getStockPrediction(ticker: string): Promise<StockPrediction> {
+  async getStockPrediction(ticker: string): Promise<StockPrediction | null> {
     try {
       const response = await predictionServiceClient.get(`/api/predict/${ticker}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching stock prediction for ${ticker}:`, error);
-      throw error;
+      // Return no prediction if no models are available
+      return null;
     }
   }
 
