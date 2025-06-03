@@ -23,32 +23,85 @@ import {
 } from '@chakra-ui/react';
 import { IconArrowUpRight, IconChartLine, IconNews, IconRobot } from '@tabler/icons-react';
 import { apiService } from '../../clients/ApiService';
+import { getBusinessDateRange } from '../../utils/dateUtils';
+import { StockData } from '../../clients/ApiService';
 
 // Sample data for popular stocks
 const POPULAR_STOCKS = [
-  { symbol: 'AAPL', name: 'Apple Inc.', price: 191.56, change: 2.37, percentChange: 1.25 },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 176.32, change: 1.76, percentChange: 1.01 },
-  { symbol: 'MSFT', name: 'Microsoft Corp.', price: 417.82, change: 3.45, percentChange: 0.83 },
-  { symbol: 'AMZN', name: 'Amazon.com Inc.', price: 180.75, change: -0.83, percentChange: -0.46 },
+  { symbol: 'AAPL', name: 'Apple Inc.'},
+  { symbol: 'GOOGL', name: 'Alphabet Inc.'},
+  { symbol: 'MSFT', name: 'Microsoft Corp.'},
+  { symbol: 'AMZN', name: 'Amazon.com Inc.'},
 ];
+
+interface TrendingStock {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  percentChange: number;
+}
 
 const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [trending, setTrending] = useState(POPULAR_STOCKS);
+  const [trending, setTrending] = useState<TrendingStock[]>([]);
   
   // In a real application, this would fetch actual data
   useEffect(() => {
-    // Simulating API call
-    setIsLoading(true);
-    
-    // Fake delay to simulate API call
-    const timer = setTimeout(() => {
-      setTrending(POPULAR_STOCKS);
+
+    const fetchData = async () => {
+      setIsLoading(true);
+
+      const trendingStocksData = await Promise.all(
+        POPULAR_STOCKS.map(async (stock) => {
+          const { startDate, endDate } = getBusinessDateRange(2);
+          const stockDataHistory = await apiService.getStockDataHistory(stock.symbol, startDate, endDate);
+          return {symbol: stock.symbol, name: stock.name, data: stockDataHistory.data };
+        })
+      );
+      //setTrending(formatTrendingStocksData(trendingStocksData));
+      const trendingStocks = formatTrendingStocksData(trendingStocksData);
+      setTrending(trendingStocks);
       setIsLoading(false);
-    }, 500);
-    
-    return () => clearTimeout(timer);
+    }
+
+    fetchData();
   }, []);
+
+
+  // Helper to format the trending stock data into the correct format
+  const formatTrendingStocksData = (rawTrendingStocksData: { symbol: string, name:string, data: StockData[] }[]) : TrendingStock[] => {
+    const trendingStocksData: TrendingStock[] = [];
+    
+    rawTrendingStocksData.forEach(({ symbol, name, data }) => {
+
+      if (data.length > 0) {
+
+        // Get the most recent trading day data
+        const latestTradingDay = data[data.length - 1];
+
+        const trendingStockData: TrendingStock = {symbol: symbol, name: name, price: latestTradingDay.Close, change:0, percentChange:0};
+
+        if (data.length > 1) {
+          
+          // Get the most previous trading day data
+          const previousTradingDay = data[data.length - 2];
+
+          // Change and Percentage Change Calculation
+          const change = latestTradingDay.Close - previousTradingDay.Close;
+          trendingStockData.change = change;
+          const percentChange = change/previousTradingDay.Close * 100;
+          trendingStockData.percentChange = percentChange;
+        }
+
+        // Push the trending stock into the main list
+        trendingStocksData.push(trendingStockData)
+      }
+    });
+    
+    return trendingStocksData;
+  }
+
   
   return (
     <Box>
