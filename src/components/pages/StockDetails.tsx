@@ -47,6 +47,8 @@ const StockDetails: React.FC = () => {
   const [sentimentData, setSentimentData] = useState<SentimentAnalysis[]>([]);
   const [historicalData, setHistoricalData] = useState<{date: string, price: number, volume:number}[]>([]);
   const [error, setError] = useState('');
+  const [model, setModel] = useState('lstm');
+  const [allModelType, setAllModelType] = useState([])
   
   useEffect(() => {
     const fetchData = async () => {
@@ -56,6 +58,10 @@ const StockDetails: React.FC = () => {
       setError('');
       
       try {
+        // Fetch all possible model type
+        const listOfModelType = await apiService.getModelsTypes()
+        setAllModelType(listOfModelType.types)
+
         // Fetch prediction data
         const predictionData = await apiService.getStockPrediction(ticker);
         setPrediction(predictionData);
@@ -175,7 +181,13 @@ const StockDetails: React.FC = () => {
                ticker === 'AMZN' ? 'Amazon.com Inc.' : 'Stock Details'}
             </Text>
           </Box>
-          
+          <select onChange={(type) => console.log(type.target.value)}>
+                {allModelType.map((val, index) => (
+                  <option key={index} value={val}>
+                    {val}
+                  </option>
+                  ))}
+          </select>
           <Box>
             <Badge 
               colorScheme={dominantSentiment === 'positive' ? 'green' : dominantSentiment === 'negative' ? 'red' : 'gray'} 
@@ -216,13 +228,23 @@ const StockDetails: React.FC = () => {
                   <StatHelpText>
                     <Flex align="center" justify="space-between">
                       <Text>Confidence: {(prediction.confidence * 100).toFixed(1)}%</Text>
-                      <Text fontSize="sm" color="gray.500">Model: {prediction.model_type}</Text>
+                      {/* <Text fontSize="sm" color="gray.500">Model: {prediction.model_type}</Text> */}
                     </Flex>
                   </StatHelpText>
                 </Stat>
               ) : (
                 <Text>No prediction data available</Text>
               )}
+              <Flex align="center" justify="right">
+                <Text fontSize="sm" color="gray.500">Model:</Text>
+                <select onChange={(type) => console.log(type.target.value)} style={{backgroundColor:'beige', width:'150px'}}>
+                {allModelType.map((val, index) => (
+                  <option key={index} value={val}>
+                    {val}
+                  </option>
+                  ))}
+                </select>
+              </Flex>
             </Box>
           </GridItem>
         </Grid>
