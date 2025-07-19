@@ -63,7 +63,7 @@ const StockDetails: React.FC = () => {
         setAllModelType(listOfModelType.types)
 
         // Fetch prediction data
-        const predictionData = await apiService.getStockPrediction(ticker);
+        const predictionData = await apiService.getStockPrediction(ticker, model);
         setPrediction(predictionData);
         
         // Fetch sentiment analysis
@@ -144,6 +144,29 @@ const StockDetails: React.FC = () => {
         return 'gray.500';
     }
   };
+
+
+  const updateModelType = async (model_type: string) =>{
+    setModel(model_type)
+    setLoading(true);
+    
+    try {
+      const dataPredict = await apiService.getStockPrediction(ticker, model_type);
+      setPrediction(dataPredict);
+    } catch (err) {
+      console.error('Error fetching prediction:', err);
+      toast({
+          title: 'Error',
+          description: 'Failed to load stock data.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   
   if (loading) {
     return (
@@ -181,13 +204,7 @@ const StockDetails: React.FC = () => {
                ticker === 'AMZN' ? 'Amazon.com Inc.' : 'Stock Details'}
             </Text>
           </Box>
-          <select onChange={(type) => console.log(type.target.value)}>
-                {allModelType.map((val, index) => (
-                  <option key={index} value={val}>
-                    {val}
-                  </option>
-                  ))}
-          </select>
+
           <Box>
             <Badge 
               colorScheme={dominantSentiment === 'positive' ? 'green' : dominantSentiment === 'negative' ? 'red' : 'gray'} 
@@ -237,7 +254,7 @@ const StockDetails: React.FC = () => {
               )}
               <Flex align="center" justify="right">
                 <Text fontSize="sm" color="gray.500">Model:</Text>
-                <select onChange={(type) => console.log(type.target.value)} style={{backgroundColor:'beige', width:'150px'}}>
+                <select value={model} onChange={(type) => updateModelType(type.target.value)} style={{backgroundColor:'beige', width:'150px'}}>
                 {allModelType.map((val, index) => (
                   <option key={index} value={val}>
                     {val}
