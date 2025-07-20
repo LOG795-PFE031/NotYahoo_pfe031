@@ -110,6 +110,8 @@ const dataServiceClient = createApiClient(
   import.meta.env.VITE_DATA_SERVICE_URL || 'http://localhost:8000'
 );
 
+const stockAIServiceClient = createApiClient('http://localhost:8000');
+
 class ApiService {
   // Get stock prediction for a ticker
   async getStockPrediction(ticker: string, model_type: string): Promise<StockPrediction | null> {
@@ -153,8 +155,6 @@ class ApiService {
     try {
       const hasDateRange = start_date && end_date;
       const query = hasDateRange ? `?start_date=${start_date}&end_date=${end_date}` : "";
-      // const url = `/api/data/stock/${ticker}${query}`;
-      // const url = `/api/data/stock/${ticker}/historical`;
       const url = `/api/data/stock/${ticker}/historical/${query}`;
 
       const response = await dataServiceClient.get<StockDataHistory>(url);
@@ -169,7 +169,7 @@ class ApiService {
   async getModelsTypes() {
     try {
       const url = `/api/train/trainers`;
-      const response = await dataServiceClient.get(url);
+      const response = await stockAIServiceClient.get(url);
       return response.data;
     } catch (error) {
       console.error(`Error fetching all models types`, error);

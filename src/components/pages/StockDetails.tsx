@@ -245,7 +245,6 @@ const StockDetails: React.FC = () => {
                   <StatHelpText>
                     <Flex align="center" justify="space-between">
                       <Text>Confidence: {(prediction.confidence * 100).toFixed(1)}%</Text>
-                      {/* <Text fontSize="sm" color="gray.500">Model: {prediction.model_type}</Text> */}
                     </Flex>
                   </StatHelpText>
                 </Stat>
