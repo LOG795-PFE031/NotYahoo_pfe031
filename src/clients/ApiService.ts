@@ -110,11 +110,15 @@ const dataServiceClient = createApiClient(
   import.meta.env.VITE_DATA_SERVICE_URL || 'http://localhost:8000'
 );
 
+const stockAIServiceClient = createApiClient('http://localhost:8000');
+
 class ApiService {
   // Get stock prediction for a ticker
-  async getStockPrediction(ticker: string): Promise<StockPrediction | null> {
+  async getStockPrediction(ticker: string, model_type: string): Promise<StockPrediction | null> {
     try {
-      const response = await predictionServiceClient.get(`/api/predict/${ticker}`);
+      const query =`?model_type=${model_type}`;
+
+      const response = await predictionServiceClient.get(`/api/predict/${ticker}/${query}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching stock prediction for ${ticker}:`, error);
@@ -151,12 +155,24 @@ class ApiService {
     try {
       const hasDateRange = start_date && end_date;
       const query = hasDateRange ? `?start_date=${start_date}&end_date=${end_date}` : "";
-      const url = `/api/data/stock/${ticker}${query}`;
+      const url = `/api/data/stock/${ticker}/historical/${query}`;
 
       const response = await dataServiceClient.get<StockDataHistory>(url);
       return response.data;
     } catch (error) {
       console.error(`Error fetching stock data for ${ticker}:`, error);
+      throw error;
+    }
+  }
+
+  // Fetch all model type
+  async getModelsTypes() {
+    try {
+      const url = `/api/train/trainers`;
+      const response = await stockAIServiceClient.get(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching all models types`, error);
       throw error;
     }
   }

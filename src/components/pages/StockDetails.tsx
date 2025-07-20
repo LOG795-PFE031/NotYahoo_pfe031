@@ -47,6 +47,8 @@ const StockDetails: React.FC = () => {
   const [sentimentData, setSentimentData] = useState<SentimentAnalysis[]>([]);
   const [historicalData, setHistoricalData] = useState<{date: string, price: number, volume:number}[]>([]);
   const [error, setError] = useState('');
+  const [model, setModel] = useState('lstm');
+  const [allModelType, setAllModelType] = useState([])
   
   useEffect(() => {
     const fetchData = async () => {
@@ -56,8 +58,12 @@ const StockDetails: React.FC = () => {
       setError('');
       
       try {
+        // Fetch all possible model type
+        const listOfModelType = await apiService.getModelsTypes()
+        setAllModelType(listOfModelType.types)
+
         // Fetch prediction data
-        const predictionData = await apiService.getStockPrediction(ticker);
+        const predictionData = await apiService.getStockPrediction(ticker, model);
         setPrediction(predictionData);
         
         // Fetch sentiment analysis
@@ -138,6 +144,29 @@ const StockDetails: React.FC = () => {
         return 'gray.500';
     }
   };
+
+
+  const updateModelType = async (model_type: string) =>{
+    setModel(model_type)
+    setLoading(true);
+    
+    try {
+      const dataPredict = await apiService.getStockPrediction(ticker, model_type);
+      setPrediction(dataPredict);
+    } catch (err) {
+      console.error('Error fetching prediction:', err);
+      toast({
+          title: 'Error',
+          description: 'Failed to load stock data.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   
   if (loading) {
     return (
@@ -175,7 +204,7 @@ const StockDetails: React.FC = () => {
                ticker === 'AMZN' ? 'Amazon.com Inc.' : 'Stock Details'}
             </Text>
           </Box>
-          
+
           <Box>
             <Badge 
               colorScheme={dominantSentiment === 'positive' ? 'green' : dominantSentiment === 'negative' ? 'red' : 'gray'} 
@@ -216,13 +245,22 @@ const StockDetails: React.FC = () => {
                   <StatHelpText>
                     <Flex align="center" justify="space-between">
                       <Text>Confidence: {(prediction.confidence * 100).toFixed(1)}%</Text>
-                      <Text fontSize="sm" color="gray.500">Model: {prediction.model_type}</Text>
                     </Flex>
                   </StatHelpText>
                 </Stat>
               ) : (
                 <Text>No prediction data available</Text>
               )}
+              <Flex align="center" justify="right">
+                <Text fontSize="sm" color="gray.500">Model:</Text>
+                <select value={model} onChange={(type) => updateModelType(type.target.value)} style={{backgroundColor:'beige', width:'150px'}}>
+                {allModelType.map((val, index) => (
+                  <option key={index} value={val}>
+                    {val}
+                  </option>
+                  ))}
+                </select>
+              </Flex>
             </Box>
           </GridItem>
         </Grid>
