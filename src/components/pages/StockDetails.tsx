@@ -46,6 +46,7 @@ const StockDetails: React.FC = () => {
   const [prediction, setPrediction] = useState<StockPrediction | null>(null);
   const [sentimentData, setSentimentData] = useState<SentimentAnalysis[]>([]);
   const [historicalData, setHistoricalData] = useState<{date: string, price: number, volume:number}[]>([]);
+  const [stockName, setStockName] = useState<string>('');
   const [error, setError] = useState('');
   const [model, setModel] = useState('lstm');
   const [allModelType, setAllModelType] = useState([])
@@ -73,6 +74,11 @@ const StockDetails: React.FC = () => {
         // Fetch historical data
         const { startDate, endDate } = getBusinessDateRange();
         const historicalData = await apiService.getStockDataHistory(ticker, startDate, endDate);
+
+        // Set the company name from the response
+        setStockName(historicalData.name);
+
+        // Set the historical data as before
         const formattedHistoricalData = formatHistoricalData(historicalData.data);
         setHistoricalData(formattedHistoricalData);
         
@@ -104,6 +110,20 @@ const StockDetails: React.FC = () => {
     }));
     
     return data;
+  };
+
+  // Helper to calculate price change and percent change
+  const getPriceChange = () => {
+    if (historicalData.length < 2) return null;
+    const last = historicalData[historicalData.length - 1];
+    const prev = historicalData[historicalData.length - 2];
+    const change = last.price - prev.price;
+    const percent = (change / prev.price) * 100;
+    return {
+      change: change.toFixed(2),
+      percent: percent.toFixed(2),
+      isPositive: change >= 0
+    };
   };
   
   // Calculate sentiment averages
@@ -151,6 +171,7 @@ const StockDetails: React.FC = () => {
     setLoading(true);
     
     try {
+      if (!ticker) throw new Error('Ticker is undefined');
       const dataPredict = await apiService.getStockPrediction(ticker, model_type);
       setPrediction(dataPredict);
     } catch (err) {
@@ -197,11 +218,7 @@ const StockDetails: React.FC = () => {
               {ticker}
             </Heading>
             <Text fontSize="lg" color="gray.600">
-              {/* This would be the company name in a real implementation */}
-              {ticker === 'AAPL' ? 'Apple Inc.' : 
-               ticker === 'MSFT' ? 'Microsoft Corporation' : 
-               ticker === 'GOOGL' ? 'Alphabet Inc.' : 
-               ticker === 'AMZN' ? 'Amazon.com Inc.' : 'Stock Details'}
+              {stockName || 'Stock Details'}
             </Text>
           </Box>
 
@@ -228,8 +245,20 @@ const StockDetails: React.FC = () => {
                   ${historicalData.length > 0 ? historicalData[historicalData.length - 1].price.toFixed(2) : 'N/A'}
                 </StatNumber>
                 <StatHelpText>
-                  {/* This would show actual change data in a real implementation */}
-                  <Text color="green.500">+2.34 (+1.54%) Today</Text>
+                  {(() => {
+                    const priceChange = getPriceChange();
+                    if (priceChange) {
+                      return (
+                        <Text color={priceChange.isPositive ? "green.500" : "red.500"}>
+                          {priceChange.isPositive ? "+" : ""}
+                          {priceChange.change} ({priceChange.isPositive ? "+" : ""}
+                          {priceChange.percent}%) Today
+                        </Text>
+                      );
+                    } else {
+                      return <Text color="gray.500">No change data</Text>;
+                    }
+                  })()}
                 </StatHelpText>
               </Stat>
             </Box>

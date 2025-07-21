@@ -55,6 +55,19 @@ export interface StockDataHistory {
   timestamp: string;
 }
 
+export interface StockDataHistoryResponse {
+  symbol: string;
+  name: string;
+  data: StockData[];
+  meta: {
+    message: string;
+    version: string;
+    documentation: string;
+    endpoints: string[];
+  };
+  timestamp: string;
+}
+
 // Define the real News API response type
 export interface NewsApiResponse {
   symbol: string;
@@ -151,13 +164,13 @@ class ApiService {
   }
 
   // Fetch stock data
-  async getStockDataHistory(ticker: string, start_date: string = "", end_date: string = ""): Promise<StockDataHistory> {
+  async getStockDataHistory(ticker: string, start_date: string = "", end_date: string = ""): Promise<StockDataHistoryResponse> {
     try {
       const hasDateRange = start_date && end_date;
       const query = hasDateRange ? `?start_date=${start_date}&end_date=${end_date}` : "";
       const url = `/api/data/stock/${ticker}/historical/${query}`;
 
-      const response = await dataServiceClient.get<StockDataHistory>(url);
+      const response = await dataServiceClient.get<StockDataHistoryResponse>(url);
       return response.data;
     } catch (error) {
       console.error(`Error fetching stock data for ${ticker}:`, error);
