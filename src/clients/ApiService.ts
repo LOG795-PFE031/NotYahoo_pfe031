@@ -90,6 +90,17 @@ export interface NewsData {
     confidence: number;
 };
 
+export interface Stock {
+  companyName: string,
+  deltaIndicator: string,
+  lastSalePrice: string,
+  marketCap: string,
+  netChange: string,
+  percentageChange:  string,
+  sector:  string,
+  symbol:  string
+}
+
 // Create base API clients with default configurations
 const createApiClient = (baseURL: string): AxiosInstance => {
   return axios.create({
@@ -173,6 +184,18 @@ class ApiService {
       return response.data;
     } catch (error) {
       console.error(`Error fetching all models types`, error);
+      throw error;
+    }
+  }
+
+  // Fetch all stocks
+  async getStocks(): Promise<Stock[]> {
+    try {
+      const url = `/api/data/stocks`;
+      const response = await stockAIServiceClient.get(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching all stocks`, error);
       throw error;
     }
   }

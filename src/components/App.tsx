@@ -14,6 +14,7 @@ import Login from './pages/Login.tsx';
 // Import layout components
 import Header from './layout/Header.tsx';
 import Footer from './layout/Footer.tsx';
+import Market from './pages/Market.tsx';
 
 const App: React.FC = () => {
   return (
@@ -24,6 +25,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/stock/:ticker" element={<StockDetails />} />
+          <Route path="/markets" element={<Market />} />
           <Route path="/portfolio" element={<Portfolio />} />
           <Route path="/portfolio/performance" element={<PortfolioPerformance />} />
           <Route path="/advisor" element={<Advisor />} />
