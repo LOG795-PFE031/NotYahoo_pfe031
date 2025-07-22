@@ -51,24 +51,6 @@ const SignUp: React.FC = () => {
       console.log('Attempting registry with server:', import.meta.env.VITE_API_AUTH_URL || 'https://localhost:55604');
       
       await authServer.createUser(username, password);
-
-      // const errorDetails = [];
-      
-      // Try standard registry method first (non-encrypted)
-      // try {
-      //   // console.log('Trying standard registry method...');
-      //   // await authServer.login(username, password);
-      //   // console.log('Standard registry successful!');
-      // } catch (firstError) {
-      //   errorDetails.push(`Standard method failed: ${firstError instanceof Error ? firstError.message : 'Unknown error'}`);
-      //   console.log('Standard Sign Up failed, trying encrypted method...', firstError);
-        
-      //   // If standard method fails, try encrypted
-      //   await authServer.loginEncrypted(username, password);
-      //   console.log('Encrypted Sign Up successful!');
-      // }
-      
-      // Token and user info are already saved in the login methods
       
       toast({
         title: 'Sign Up Success',
@@ -81,7 +63,7 @@ const SignUp: React.FC = () => {
       // Notify other components about auth state change
       window.dispatchEvent(new Event('authStateChange'));
       
-      // Redirect to dashboard
+      // Redirect to login
       navigate('/login');
     } catch (error) {
       console.error('All Sign Up attempts failed:', error);
