@@ -10,6 +10,38 @@ export class AuthServer {
     constructor(baseUrl: string) {
       this.baseUrl = baseUrl;
     }
+
+    public async createUser (
+        username : string, 
+        password : string
+    ){
+        try{
+            const role = 'Client'
+            const requestBody = {
+                username,
+                password,
+                role 
+            };
+            const response = await fetch(`${this.baseUrl}/users`,{
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            })
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Server error response:', errorText);
+                throw new Error(`Sign up failed with status: ${response.status} - ${errorText}`);
+            }
+        }
+        catch(error){
+            console.log(error)
+            throw(error)
+        }
+        
+    }
   
     /**
      * Sends a POST request to the /login endpoint with username/password.

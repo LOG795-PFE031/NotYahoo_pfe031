@@ -50,6 +50,8 @@ const SignUp: React.FC = () => {
     try {
       console.log('Attempting registry with server:', import.meta.env.VITE_API_AUTH_URL || 'https://localhost:55604');
       
+      await authServer.createUser(username, password);
+
       // const errorDetails = [];
       
       // Try standard registry method first (non-encrypted)
@@ -69,8 +71,8 @@ const SignUp: React.FC = () => {
       // Token and user info are already saved in the login methods
       
       toast({
-        title: 'Sign Up TO DO*******',
-        description: 'the backend logic is needed, to be able to create a new user.',
+        title: 'Sign Up Success',
+        description: 'Congratulation, your account is now set. You are redirected to the login pages.',
         status: 'success',
         duration: 3000,
         isClosable: true,
