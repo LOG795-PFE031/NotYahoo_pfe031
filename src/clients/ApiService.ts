@@ -215,7 +215,7 @@ class ApiService {
   async getStocks(): Promise<Stock[]> {
     try {
       const url = `/api/data/stocks`;
-      const response = await stockAIServiceClient.get(url);
+      const response = await stockAIServiceClient.get(url,{method:'GET'});
       return response.data;
     } catch (error) {
       console.error(`Error fetching all stocks`, error);
