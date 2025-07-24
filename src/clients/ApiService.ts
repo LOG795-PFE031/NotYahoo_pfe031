@@ -140,9 +140,14 @@ class ApiService {
   // Get stock prediction for a ticker
   async getStockPrediction(ticker: string, model_type: string): Promise<StockPrediction | null> {
     try {
-      const query =`?model_type=${model_type}`;
 
-      const response = await predictionServiceClient.get(`/api/predict/${ticker}/${query}`);
+      const response = await predictionServiceClient.get(`/api/predict`,{
+        params:{
+          symbol: ticker,
+          model_type: model_type
+        }
+      });
+
       return response.data;
     } catch (error) {
       console.error(`Error fetching stock prediction for ${ticker}:`, error);
@@ -177,11 +182,16 @@ class ApiService {
   // Fetch stock data
   async getStockDataHistory(ticker: string, start_date: string = "", end_date: string = ""): Promise<StockDataHistoryResponse> {
     try {
-      const hasDateRange = start_date && end_date;
-      const query = hasDateRange ? `?start_date=${start_date}&end_date=${end_date}` : "";
-      const url = `/api/data/stock/${ticker}/historical/${query}`;
+      const url = `/api/data/stock/historical`;
 
-      const response = await dataServiceClient.get<StockDataHistoryResponse>(url);
+      const response = await dataServiceClient.get<StockDataHistoryResponse>(url,{
+        params:{
+          symbol: ticker,
+          start_date: start_date,
+          end_date: end_date
+        }
+      });
+
       return response.data;
     } catch (error) {
       console.error(`Error fetching stock data for ${ticker}:`, error);
@@ -205,7 +215,7 @@ class ApiService {
   async getStocks(): Promise<Stock[]> {
     try {
       const url = `/api/data/stocks`;
-      const response = await stockAIServiceClient.get(url);
+      const response = await stockAIServiceClient.get(url,{method:'GET'});
       return response.data;
     } catch (error) {
       console.error(`Error fetching all stocks`, error);
@@ -228,7 +238,11 @@ class ApiService {
       
       try {
         // Direct API call to the news endpoint
-        const response = await axios.get<NewsApiResponse>(`${import.meta.env.VITE_PREDICTION_SERVICE_URL || 'http://localhost:8000'}/api/data/news/${ticker}`);
+        const response = await axios.get<NewsApiResponse>(`${import.meta.env.VITE_PREDICTION_SERVICE_URL || 'http://localhost:8000'}/api/data/news`, {
+          params:{
+            symbol: ticker
+          }
+        });
         console.log(`ApiService: Got news data for ${ticker}:`, response.data);
         
         // Transform API response to match our expected format
