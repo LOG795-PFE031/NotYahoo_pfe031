@@ -1,4 +1,4 @@
-# Dockerfile for Node.js backend with hot-reload
+# Simple Dockerfile for Vite frontend development
 FROM node:20-alpine
 
 WORKDIR /app
@@ -8,6 +8,6 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 3001
+EXPOSE 5173
 
-CMD ["npm", "run", "server:dev"] 
+CMD ["npm", "run", "dev"] 
