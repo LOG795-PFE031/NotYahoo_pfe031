@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  server:
+    build: .
+    container_name: pfe_server
+    working_dir: /app
+    command: npm run server:dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3001:3001"
+    environment:
+      - VITE_MONGODB_URL=mongodb://mongo:mongo@mongo:27017
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:6.0
+    container_name: pfe_mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo
+      MONGO_INITDB_ROOT_PASSWORD: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data: 

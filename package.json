@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "server": "node --experimental-modules src/api/server.js"
+    "server": "node --experimental-modules src/api/server.js",
+    "server:dev": "nodemon --watch src/api --ext js,ts --exec node --experimental-modules src/api/server.js"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.2.4",
@@ -50,6 +51,7 @@
     "globals": "^15.14.0",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.18.2",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "nodemon": "^3.1.0"
   }
 }
