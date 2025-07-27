@@ -42,6 +42,7 @@ import { getBusinessDateRange } from '../../utils/dateUtils';
 const StockDetails: React.FC = () => {
   const { ticker } = useParams<{ ticker: string }>();
   const toast = useToast();
+  const [buttonClickable, setButtonClickable] = useState(false);
   
   const [loading, setLoading] = useState(true);
   const [prediction, setPrediction] = useState<StockPrediction | null>(null);
@@ -317,7 +318,8 @@ const StockDetails: React.FC = () => {
                   <Button 
                   size="sm" 
                   colorScheme="brand"
-                  onClick={() => {trainData()}}
+                  disabled = {buttonClickable}
+                  onClick={() => { setButtonClickable(true); trainData()}}
                 >
                   Train Data
                 </Button>
