@@ -21,7 +21,8 @@ import {
   StatLabel,
   StatNumber,
   StatHelpText,
-  useToast
+  useToast,
+  Button
 } from '@chakra-ui/react';
 import {
   LineChart,
@@ -188,6 +189,37 @@ const StockDetails: React.FC = () => {
     }
   }
 
+  const trainData = async () =>{
+    try {
+      if (!ticker) throw new Error('Ticker is undefined');
+      apiService.trainStock(ticker, model).then(async (response) =>{
+        if(response == 200 ){
+          setLoading(true)
+          toast({
+          title: 'Training Stock Successful',
+          description: 'You have been successfully train the stock',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+          });
+
+          const predictionData = await apiService.getStockPrediction(ticker, model);
+          setPrediction(predictionData);
+          setLoading(false)
+        }
+      })
+    } catch (err) {
+      console.error('Error fetching prediction:', err);
+      toast({
+          title: 'Error',
+          description: 'Failed to train stock data.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+      });
+    } 
+  }
+
   
   if (loading) {
     return (
@@ -280,7 +312,20 @@ const StockDetails: React.FC = () => {
               ) : (
                 <Text>No prediction data available</Text>
               )}
-              <Flex align="center" justify="right">
+              <Flex align="center" justify="space-between">
+                { !prediction ? (
+                  <Button 
+                  size="sm" 
+                  colorScheme="brand"
+                  onClick={() => {trainData()}}
+                >
+                  Train Data
+                </Button>
+
+                ): ""
+
+                }
+                
                 <Text fontSize="sm" color="gray.500">Model:</Text>
                 <select value={model} onChange={(type) => updateModelType(type.target.value)} style={{backgroundColor:'beige', width:'150px'}}>
                 {allModelType.map((val, index) => (
