@@ -223,6 +223,20 @@ class ApiService {
     }
   }
 
+  // Fetch all stocks
+  async trainStock(ticker: string, model_type: string): Promise<number> {
+    try {
+      const url = `/api/train`;
+      const response = await stockAIServiceClient.post(
+        `${url}?symbol=${ticker}&model_type=${model_type}`
+      );
+      return response.status;
+    } catch (error) {
+      console.error(`Error training stock`, error);
+      throw error;
+    }
+  }
+
   // Get news data for a ticker
   async getNewsData(ticker: string): Promise<{ 
     articles: Array<NewsData>,
