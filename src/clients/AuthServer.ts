@@ -11,6 +11,30 @@ export class AuthServer {
       this.baseUrl = baseUrl;
     }
 
+    /**
+     * Get the user wallet ID
+     */
+    public async getUserWalletId() 
+    {
+        const username = AuthServer.getUsername()
+        const walletResponse = await axios.get(`${this.baseUrl}/user/wallet`, {
+            params:{
+                username : username
+            }
+        })
+        return walletResponse
+    }
+
+    /**
+     * Get the user wallet
+     */
+    public async getUserShares(userWalletId : string) 
+    {
+        console.log(userWalletId)
+        const shareResponse = await axios.get(`https://localhost:55616/portfolio/${userWalletId}`)
+        return shareResponse
+    }
+
     public async createUser (
         username : string, 
         password : string
