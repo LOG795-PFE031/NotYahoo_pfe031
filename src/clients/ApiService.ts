@@ -199,6 +199,23 @@ class ApiService {
     }
   }
 
+  // Fetch current stock information
+  async getStockInformation(symbol: string) {
+    try {
+      console.log(symbol)
+      const url = `/api/data/stock/current`;
+      const response = await stockAIServiceClient.get(url, {
+        params:{
+          symbol: symbol
+        }
+      });
+      console.log(response)
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching information`, error);
+      throw error;
+    }
+  }
   // Fetch all model type
   async getModelsTypes() {
     try {

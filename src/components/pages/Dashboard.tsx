@@ -52,16 +52,16 @@ const Dashboard: React.FC = () => {
     const fetchData = async () => {
       setIsLoading(true);
 
-      const trendingStocksData = await Promise.all(
-        POPULAR_STOCKS.map(async (stock) => {
-          const { startDate, endDate } = getBusinessDateRange(2);
-          const stockDataHistory = await apiService.getStockDataHistory(stock.symbol, startDate, endDate);
-          return {symbol: stock.symbol, name: stock.name, data: stockDataHistory.data };
-        })
-      );
-      //setTrending(formatTrendingStocksData(trendingStocksData));
-      const trendingStocks = formatTrendingStocksData(trendingStocksData);
-      setTrending(trendingStocks);
+      // const trendingStocksData = await Promise.all(
+      //   POPULAR_STOCKS.map(async (stock) => {
+      //     const { startDate, endDate } = getBusinessDateRange(2);
+      //     const stockDataHistory = await apiService.getStockDataHistory(stock.symbol, startDate, endDate);
+      //     return {symbol: stock.symbol, name: stock.name, data: stockDataHistory.data };
+      //   })
+      // );
+      // //setTrending(formatTrendingStocksData(trendingStocksData));
+      // const trendingStocks = formatTrendingStocksData(trendingStocksData);
+      // setTrending(trendingStocks);
       setIsLoading(false);
     }
 
