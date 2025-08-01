@@ -16,18 +16,9 @@ import {
   Tooltip,
   Badge,
   useColorModeValue,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  useDisclosure,
-  Textarea,
   useToast
 } from '@chakra-ui/react';
-import { IconSend, IconRobot, IconUser, IconInfoCircle, IconBug } from '@tabler/icons-react';
+import { IconSend, IconRobot, IconUser, IconInfoCircle } from '@tabler/icons-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import chatbotService from '../../clients/ChatbotService';
@@ -48,12 +39,9 @@ const Advisor: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [debugReport, setDebugReport] = useState<string>('');
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [cursorVisible, setCursorVisible] = useState(true);
-  const [testingConnection, setTestingConnection] = useState(false);
   
   const bgColor = useColorModeValue('gray.50', 'gray.800');
   const messageBgUser = useColorModeValue('blue.500', 'blue.400');
@@ -215,94 +203,10 @@ const Advisor: React.FC = () => {
     pre: (props: any) => <Box as="pre" bg="gray.100" p={2} borderRadius="md" overflowX="auto" my={2} {...props} />
   };
 
-  // Function to run debug report
-  const runDebugReport = async () => {
-    try {
-      setDebugReport('Generating debug report...');
-      onOpen();
-      const report = await chatbotService.debugMongoDB();
-      setDebugReport(report);
-    } catch (error) {
-      setDebugReport(`Error generating report: ${error}`);
-    }
-  };
 
-  // Add function to test MongoDB connection
-  const testMongoDBConnection = async () => {
-    setTestingConnection(true);
-    try {
-      const testMessage = `Test message created at ${new Date().toISOString()}`;
-      const success = await chatbotService.createTestMessage(testMessage);
-      
-      if (success) {
-        toast({
-          title: "MongoDB Connection Successful",
-          description: "Successfully connected to MongoDB database and saved a test message.",
-          status: "success",
-          duration: 5000,
-          isClosable: true,
-        });
-        
-        // Add a system message about the successful connection
-        const systemMessage: Message = {
-          id: crypto.randomUUID(),
-          content: "✅ Successfully connected to MongoDB database! The chatbot is ready to use.",
-          sender: 'assistant',
-          timestamp: new Date()
-        };
-        
-        setMessages(prev => [...prev, systemMessage]);
-      } else {
-        toast({
-          title: "MongoDB Connection Failed",
-          description: "Failed to connect to MongoDB database or save a test message.",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-        
-        // Add an error message
-        const errorMessage: Message = {
-          id: crypto.randomUUID(),
-          content: "❌ Failed to connect to MongoDB database. Some features may not work correctly.",
-          sender: 'assistant',
-          timestamp: new Date()
-        };
-        
-        setMessages(prev => [...prev, errorMessage]);
-      }
-    } catch (error) {
-      console.error("Error testing MongoDB connection:", error);
-      toast({
-        title: "MongoDB Connection Error",
-        description: "An error occurred while testing the MongoDB connection.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setTestingConnection(false);
-    }
-  };
 
   return (
     <Container maxW="container.lg" py={8}>
-      {/* Diagnostic banner */}
-      <Box 
-        bg="yellow.100" 
-        p={3} 
-        borderRadius="md" 
-        mb={4} 
-        textAlign="center"
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        <Text fontWeight="bold">Advisor Component Loaded - MongoDB Diagnostics</Text>
-        <Button size="sm" onClick={testMongoDBConnection} isLoading={testingConnection}>
-          Test Connection
-        </Button>
-      </Box>
       
       <Box bg={bgColor} borderRadius="lg" overflow="hidden" boxShadow="md">
         <Box bg="brand.500" color="white" p={4}>
@@ -320,29 +224,6 @@ const Advisor: React.FC = () => {
               />
             </Tooltip>
             <Badge ml="auto" colorScheme="green">Online</Badge>
-            <Tooltip label="Test database connection" placement="top">
-              <IconButton
-                aria-label="Test DB"
-                icon={testingConnection ? <Spinner size="sm" /> : <span>🔍</span>}
-                variant="ghost"
-                color="white"
-                ml={2}
-                size="sm"
-                onClick={testMongoDBConnection}
-                isDisabled={testingConnection}
-              />
-            </Tooltip>
-            <Tooltip label="Debug MongoDB" placement="top">
-              <IconButton
-                aria-label="Debug DB"
-                icon={<IconBug size={20} />}
-                variant="ghost"
-                color="white"
-                ml={2}
-                size="sm"
-                onClick={runDebugReport}
-              />
-            </Tooltip>
           </Flex>
         </Box>
         
@@ -440,36 +321,6 @@ const Advisor: React.FC = () => {
             Always consult with a qualified financial professional before making investment decisions.
           </Text>
         </Box>
-        
-        {/* Debug Report Modal */}
-        <Modal isOpen={isOpen} onClose={onClose} size="xl">
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>MongoDB Debug Report</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
-              <Textarea 
-                value={debugReport} 
-                readOnly 
-                height="400px"
-                fontFamily="monospace"
-                fontSize="sm"
-                whiteSpace="pre"
-              />
-            </ModalBody>
-            <ModalFooter>
-              <Button colorScheme="blue" mr={3} onClick={onClose}>
-                Close
-              </Button>
-              <Button variant="ghost" onClick={() => {
-                navigator.clipboard.writeText(debugReport);
-                alert("Debug report copied to clipboard!");
-              }}>
-                Copy to Clipboard
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
       </Box>
     </Container>
   );
