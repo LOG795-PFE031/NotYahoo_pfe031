@@ -14,7 +14,7 @@ const Market: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [stocks, setStocks] = useState<Stock[]>([])
     const [error, setError] = useState('');
-    const [tableHeader, setTableHeader] = useState([]);
+    const [tableHeader, setTableHeader] = useState<string[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -24,9 +24,9 @@ const Market: React.FC = () => {
           try {
             
             const stocksData = await apiService.getStocks();
-            setStocks(stocksData.data)
+            setStocks(stocksData)
 
-            setTableHeader(Object.keys(stocksData.data[0]))
+            setTableHeader(Object.keys(stocksData[0] || {}))
 
             setLoading(false);
             
@@ -86,11 +86,11 @@ const Market: React.FC = () => {
         <Container>
           <table>
               <thead>
-                <tr>
-                  {tableHeader.map((value) => (
-                      <th style={{backgroundColor:'grey'}}>{value}</th>
-                  ))}
-                </tr>
+                                 <tr>
+                   {tableHeader.map((value, index) => (
+                       <th key={index} style={{backgroundColor:'grey'}}>{value}</th>
+                   ))}
+                 </tr>
               </thead>
               <tbody>
                 {stocks.map((stock, index) => (

@@ -216,7 +216,7 @@ class ApiService {
     try {
       const url = `/api/data/stocks`;
       const response = await stockAIServiceClient.get(url,{method:'GET'});
-      return response.data;
+      return response.data.data || response.data;
     } catch (error) {
       console.error(`Error fetching all stocks`, error);
       throw error;
