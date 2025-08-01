@@ -164,7 +164,7 @@ const Dashboard: React.FC = () => {
           </Heading>
           <Button 
             as={RouterLink} 
-            to="/stocks" 
+            to="/markets" 
             rightIcon={<IconArrowUpRight size={16} />} 
             variant="ghost" 
             colorScheme="blue"

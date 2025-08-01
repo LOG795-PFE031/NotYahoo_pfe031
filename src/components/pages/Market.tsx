@@ -21,7 +21,11 @@ const Market: React.FC = () => {
     const cachedData = localStorage.getItem('nasdaqStocks');
     if (cachedData) {
       setStocks(JSON.parse(cachedData));
-      setTableHeader(Object.keys(JSON.parse(cachedData)[0]));
+      const headers = Object.keys(JSON.parse(cachedData)[0]);
+      const formatedHeader = headers.map((head) => {
+        return head.replace(/(?<!^)([A-Z])/g, ' $1');
+      })
+      setTableHeader(formatedHeader);
       setLoading(false);
     }
     else {
@@ -35,7 +39,11 @@ const Market: React.FC = () => {
           const stocksData = await apiService.getStocks();
           setStocks(stocksData.data)
 
-          setTableHeader(Object.keys(stocksData.data[0]))
+          const headers = Object.keys(JSON.parse(cachedData)[0]);
+          const formatedHeader = headers.map((head) => {
+            return head.replace(/(?<!^)([A-Z])/g, ' $1');
+          })
+          setTableHeader(formatedHeader)
           localStorage.setItem('nasdaqStocks', JSON.stringify(stocksData.data));
 
           setLoading(false);
