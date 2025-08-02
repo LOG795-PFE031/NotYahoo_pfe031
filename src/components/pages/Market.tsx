@@ -1,8 +1,8 @@
-import { Alert, AlertIcon, Container, Spinner, Text, useToast, Box, Heading, Badge, Flex, IconButton, Tooltip } from "@chakra-ui/react";
-import React, { useState, useEffect } from 'react';
+import { Alert, AlertIcon, Container, Spinner, Text, useToast, Box, Heading, Badge, Flex, IconButton, Tooltip, Button, Select, HStack } from "@chakra-ui/react";
+import React, { useState, useEffect, useMemo } from 'react';
 import apiService, { Stock} from '../../clients/ApiService';
 import { useNavigate } from "react-router-dom";
-import { IconArrowUp, IconArrowDown, IconMinus, IconExternalLink } from '@tabler/icons-react';
+import { IconArrowUp, IconArrowDown, IconMinus, IconExternalLink, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 
 const Market: React.FC = () => {
     const toast = useToast();
@@ -10,7 +10,8 @@ const Market: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [stocks, setStocks] = useState<Stock[]>([])
     const [error, setError] = useState('');
-    const [tableHeader, setTableHeader] = useState<string[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -20,7 +21,6 @@ const Market: React.FC = () => {
           try {
             const stocksData = await apiService.getStocks();
             setStocks(stocksData)
-            setTableHeader(Object.keys(stocksData[0] || {}))
             setLoading(false);
           } catch (err) {
             console.error('Error fetching stocks:', err);
@@ -83,6 +83,41 @@ const Market: React.FC = () => {
       return marketCap;
     };
 
+    const formatValue = (value: string) => {
+      return value?.toLowerCase() === "unch" ? "0.00" : value;
+    };
+
+    // Pagination calculations
+    const totalPages = Math.ceil(stocks.length / pageSize);
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const currentStocks = useMemo(() => stocks.slice(startIndex, endIndex), [stocks, startIndex, endIndex]);
+
+    const handlePageChange = (page: number) => {
+      setCurrentPage(page);
+    };
+
+    const handlePageSizeChange = (newPageSize: number) => {
+      setPageSize(newPageSize);
+      setCurrentPage(1); // Reset to first page when changing page size
+    };
+
+    const getPageNumbers = () => {
+      const pages = [];
+      const maxVisiblePages = 5;
+      let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+      return pages;
+    };
+
     if (loading) {
         return (
           <Container centerContent py={10}>
@@ -128,12 +163,17 @@ const Market: React.FC = () => {
               borderBottom="1px solid" 
               borderColor="gray.200"
             >
-              <Flex justify="space-between" align="center">
-                <Heading size="md" color="gray.700">Stock Market Data</Heading>
-                <Badge colorScheme="green" variant="subtle">
-                  {stocks.length} Stocks
-                </Badge>
-              </Flex>
+                             <Flex justify="space-between" align="center">
+                 <Heading size="md" color="gray.700">Stock Market Data</Heading>
+                 <Flex align="center" gap={4}>
+                   <Text fontSize="sm" color="gray.600">
+                     Showing {startIndex + 1}-{Math.min(endIndex, stocks.length)} of {stocks.length} stocks
+                   </Text>
+                   <Badge colorScheme="green" variant="subtle">
+                     {stocks.length} Total
+                   </Badge>
+                 </Flex>
+               </Flex>
             </Box>
 
             {/* Table */}
@@ -168,8 +208,8 @@ const Market: React.FC = () => {
                   </Box>
                 </Box>
                 
-                <Box as="tbody">
-                  {stocks.map((stock, index) => (
+                                 <Box as="tbody">
+                   {currentStocks.map((stock, index) => (
                     <Box 
                       as="tr" 
                       key={index}
@@ -214,24 +254,24 @@ const Market: React.FC = () => {
                       <Box as="td" px={6} py={4} textAlign="right" borderBottom="1px solid" borderColor="gray.100">
                         <Flex align="center" justify="flex-end" gap={1}>
                           {getStockIcon(stock.deltaIndicator)}
-                          <Text 
-                            fontWeight="bold" 
-                            color={getStockColor(stock.deltaIndicator)}
-                          >
-                            {stock.netChange}
-                          </Text>
+                                                     <Text 
+                             fontWeight="bold" 
+                             color={getStockColor(stock.deltaIndicator)}
+                           >
+                             {formatValue(stock.netChange)}
+                           </Text>
                         </Flex>
                       </Box>
                       
                       <Box as="td" px={6} py={4} textAlign="right" borderBottom="1px solid" borderColor="gray.100">
-                        <Badge 
-                          colorScheme={stock.deltaIndicator === 'up' ? 'green' : stock.deltaIndicator === 'down' ? 'red' : 'gray'}
-                          variant="subtle"
-                          fontSize="sm"
-                          fontWeight="bold"
-                        >
-                          {stock.percentageChange}
-                        </Badge>
+                                                 <Badge 
+                           colorScheme={stock.deltaIndicator === 'up' ? 'green' : stock.deltaIndicator === 'down' ? 'red' : 'gray'}
+                           variant="subtle"
+                           fontSize="sm"
+                           fontWeight="bold"
+                         >
+                           {formatValue(stock.percentageChange)}
+                         </Badge>
                       </Box>
                       
                       <Box as="td" px={6} py={4} textAlign="center" borderBottom="1px solid" borderColor="gray.100">
@@ -265,10 +305,82 @@ const Market: React.FC = () => {
                   ))}
                 </Box>
               </Box>
-            </Box>
-          </Box>
-        </Container>
-    );
+                         </Box>
+
+             {/* Pagination Controls */}
+             <Box 
+               px={6} 
+               py={4} 
+               bg="gray.50" 
+               borderTop="1px solid" 
+               borderColor="gray.200"
+             >
+               <Flex justify="space-between" align="center" flexWrap="wrap" gap={4}>
+                 {/* Page Size Selector */}
+                 <Flex align="center" gap={2}>
+                   <Text fontSize="sm" color="gray.600">Show:</Text>
+                   <Select 
+                     size="sm" 
+                     width="80px" 
+                     value={pageSize} 
+                     onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                     bg="white"
+                   >
+                     <option value={5}>5</option>
+                     <option value={10}>10</option>
+                     <option value={25}>25</option>
+                     <option value={50}>50</option>
+                     <option value={100}>100</option>
+                   </Select>
+                   <Text fontSize="sm" color="gray.600">per page</Text>
+                 </Flex>
+
+                 {/* Pagination Navigation */}
+                 <HStack spacing={1}>
+                   {/* Previous Button */}
+                   <IconButton
+                     aria-label="Previous page"
+                     icon={<IconChevronLeft size={16} />}
+                     size="sm"
+                     variant="outline"
+                     isDisabled={currentPage === 1}
+                     onClick={() => handlePageChange(currentPage - 1)}
+                   />
+
+                   {/* Page Numbers */}
+                   {getPageNumbers().map((page) => (
+                     <Button
+                       key={page}
+                       size="sm"
+                       variant={currentPage === page ? "solid" : "outline"}
+                       colorScheme={currentPage === page ? "blue" : "gray"}
+                       onClick={() => handlePageChange(page)}
+                       minW="40px"
+                     >
+                       {page}
+                     </Button>
+                   ))}
+
+                   {/* Next Button */}
+                   <IconButton
+                     aria-label="Next page"
+                     icon={<IconChevronRight size={16} />}
+                     size="sm"
+                     variant="outline"
+                     isDisabled={currentPage === totalPages}
+                     onClick={() => handlePageChange(currentPage + 1)}
+                   />
+                 </HStack>
+
+                 {/* Page Info */}
+                 <Text fontSize="sm" color="gray.600">
+                   Page {currentPage} of {totalPages}
+                 </Text>
+               </Flex>
+             </Box>
+           </Box>
+         </Container>
+     );
 };
 
 export default Market;
