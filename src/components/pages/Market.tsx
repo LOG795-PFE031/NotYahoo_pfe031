@@ -88,22 +88,22 @@ const Market: React.FC = () => {
               <thead>
                 <tr>
                   {tableHeader.map((value) => (
-                      <th style={{backgroundColor:'grey'}}>{value}</th>
+                      <th style={{backgroundColor:'grey', borderRadius:15, borderBottom:'solid 1px black'}}>{value}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {stocks.map((stock, index) => (
                   <tr key={index} style={{backgroundColor: getStockColor(stock.deltaIndicator)}}>
-                      <td > <button onClick={() => navigate(`/stock/${stock.symbol}`)} >{stock.symbol}</button></td>
+                      <td style={{borderRadius:2.5, border:'solid 1px black'}}> <button onClick={() => navigate(`/stock/${stock.symbol}`)} >{stock.symbol}</button></td>
                       {/* <td >{stock.sector}</td> */}
-                      <td >N/A</td> 
-                      <td >{stock.companyName}</td>
-                      <td >{stock.marketCap}</td>
-                      <td>{stock.lastSalePrice}</td>
-                      <td>{stock.netChange}</td>
-                      <td>{stock.percentageChange}</td>
-                      <td>{stock.deltaIndicator}</td>
+                      <td style={{borderRadius:25, border:'solid 1px black'}}>N/A</td> 
+                      <td style={{borderRadius:2.5, border:'solid 1px black'}}>{stock.companyName}</td>
+                      <td style={{borderRadius:2.5, border:'solid 1px black'}}>{stock.marketCap}</td>
+                      <td style={{borderRadius:2.5, border:'solid 1px black'}}>{stock.lastSalePrice}</td>
+                      <td style={{borderRadius:2.5, border:'solid 1px black'}}>{stock.netChange}</td>
+                      <td style={{borderRadius:2.5, border:'solid 1px black'}}>{stock.percentageChange}</td>
+                      <td style={{borderRadius:2.5, border:'solid 1px black'}}>{stock.deltaIndicator}</td>
                   </tr>
                 ))}
               </tbody>
