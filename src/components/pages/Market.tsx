@@ -4,6 +4,48 @@ import apiService, { Stock} from '../../clients/ApiService';
 import { useNavigate } from "react-router-dom";
 import { IconArrowUp, IconArrowDown, IconMinus, IconExternalLink, IconChevronLeft, IconChevronRight, IconTrendingUp, IconSearch, IconTable, IconCards } from '@tabler/icons-react';
 
+// Cache interface
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  expiresAt: number;
+}
+
+interface Cache {
+  [key: string]: CacheEntry<any>;
+}
+
+// Cache utility functions
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+
+const getCacheKey = (endpoint: string, params?: any): string => {
+  const paramString = params ? JSON.stringify(params) : '';
+  return `${endpoint}_${paramString}`;
+};
+
+const isCacheValid = (entry: CacheEntry<any>): boolean => {
+  return Date.now() < entry.expiresAt;
+};
+
+const getCachedData = (cache: Cache, key: string): any => {
+  const entry = cache[key];
+  if (entry && isCacheValid(entry)) {
+    console.log(`Market: Cache hit for key: ${key}`);
+    return entry.data;
+  }
+  console.log(`Market: Cache miss for key: ${key}`);
+  return null;
+};
+
+const setCachedData = (cache: Cache, key: string, data: any): void => {
+  cache[key] = {
+    data,
+    timestamp: Date.now(),
+    expiresAt: Date.now() + CACHE_DURATION
+  };
+  console.log(`Market: Cached data for key: ${key}, expires at: ${new Date(cache[key].expiresAt).toLocaleTimeString()}`);
+};
+
 const formatMarketCap = (marketCap: string) => {
   const num = parseFloat(marketCap.replace(/[$,]/g, ''));
   if (num >= 1e12) return `$${(num / 1e12).toFixed(1)}T`;
@@ -354,6 +396,9 @@ const StockSearchAndFilters: React.FC<StockSearchAndFiltersProps> = ({
 
 const Market: React.FC = () => {
     const toast = useToast();
+    
+    // Cache state
+    const [cache, setCache] = useState<Cache>({});
       
     const [loading, setLoading] = useState(true);
     const [stocks, setStocks] = useState<Stock[]>([])
@@ -363,17 +408,92 @@ const Market: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
+    // Cached API call function
+    const getCachedStocks = useCallback(async () => {
+      const cacheKey = getCacheKey('stocks');
+      const cachedData = getCachedData(cache, cacheKey);
+      
+      if (cachedData) {
+        console.log('Market: Using cached stocks data');
+        return cachedData;
+      }
+      
+      console.log('Market: Fetching stocks data from API');
+      const data = await apiService.getStocks();
+      setCachedData(cache, cacheKey, data);
+      setCache({ ...cache }); // Trigger re-render
+      return data;
+    }, [cache]);
+
+    // Cache cleanup function
+    const cleanupExpiredCache = useCallback(() => {
+      const now = Date.now();
+      const initialSize = Object.keys(cache).length;
+      const newCache = { ...cache };
+      
+      Object.keys(newCache).forEach(key => {
+        if (!isCacheValid(newCache[key])) {
+          console.log(`Market: Removing expired cache entry: ${key}`);
+          delete newCache[key];
+        }
+      });
+      
+      const finalSize = Object.keys(newCache).length;
+      if (initialSize !== finalSize) {
+        console.log(`Market: Cache cleanup removed ${initialSize - finalSize} expired entries`);
+        setCache(newCache);
+      }
+    }, [cache]);
+
+    // Cache status logging
+    const logCacheStatus = useCallback(() => {
+      const cacheKeys = Object.keys(cache);
+      const validEntries = cacheKeys.filter(key => isCacheValid(cache[key]));
+      const expiredEntries = cacheKeys.filter(key => !isCacheValid(cache[key]));
+      
+      console.log(`Market: Cache status - Total: ${cacheKeys.length}, Valid: ${validEntries.length}, Expired: ${expiredEntries.length}`);
+      
+      if (validEntries.length > 0) {
+        console.log(`Market: Valid cache entries:`, validEntries);
+      }
+    }, [cache]);
+
+    // Cleanup expired cache entries periodically
+    useEffect(() => {
+      const cleanupInterval = setInterval(cleanupExpiredCache, 60000); // Cleanup every minute
+      return () => clearInterval(cleanupInterval);
+    }, [cleanupExpiredCache]);
+
+    // Log cache status on mount and when cache changes
+    useEffect(() => {
+      logCacheStatus();
+    }, [cache, logCacheStatus]);
+
     useEffect(() => {
         const fetchData = async () => {
+          console.log('Market: Starting data fetch');
+          const startTime = performance.now();
+          
           setLoading(true);
           setError('');
 
           try {
-            const stocksData = await apiService.getStocks();
+            console.log('Market: Fetching stocks data...');
+            const stocksData = await getCachedStocks();
+            console.log(`Market: Stocks data received: ${stocksData.length} stocks`);
             setStocks(stocksData)
+            
+            const endTime = performance.now();
+            console.log(`Market: Data fetch completed in ${(endTime - startTime).toFixed(2)}ms`);
             setLoading(false);
           } catch (err) {
-            console.error('Error fetching stocks:', err);
+            const endTime = performance.now();
+            console.error('Market: Error fetching stocks:', {
+              error: err,
+              errorMessage: err instanceof Error ? err.message : 'Unknown error',
+              errorStack: err instanceof Error ? err.stack : undefined,
+              duration: `${(endTime - startTime).toFixed(2)}ms`
+            });
             setError('Failed to load stocks. Please try again later.');
             setLoading(false);
             
@@ -388,7 +508,7 @@ const Market: React.FC = () => {
         };
         
         fetchData();
-    }, [toast]);
+    }, [toast, getCachedStocks]);
 
     const navigate = useNavigate();
 
@@ -415,25 +535,30 @@ const Market: React.FC = () => {
 
     // 🚀 PERFORMANCE: Memoized event handlers
     const handlePageChange = useCallback((page: number) => {
+      console.log(`Market: Page changed to ${page}`);
       setCurrentPage(page);
     }, []);
 
     const handlePageSizeChange = useCallback((newPageSize: number) => {
+      console.log(`Market: Page size changed to ${newPageSize}`);
       setPageSize(newPageSize);
       setCurrentPage(1);
     }, []);
 
     const handleNavigate = useCallback((symbol: string) => {
+      console.log(`Market: Navigating to stock ${symbol}`);
       navigate(`/stock/${symbol}`);
     }, [navigate]);
 
     // 🚀 NEW: Search and view mode handlers
     const handleSearchChange = useCallback((value: string) => {
+      console.log(`Market: Search term changed to: "${value}"`);
       setSearchTerm(value);
       setCurrentPage(1); // Reset to first page when searching
     }, []);
 
     const handleViewModeChange = useCallback((mode: 'table' | 'cards') => {
+      console.log(`Market: View mode changed to ${mode}`);
       setViewMode(mode);
     }, []);
 
@@ -455,6 +580,7 @@ const Market: React.FC = () => {
     }, [currentPage, totalPages]);
 
     if (loading) {
+        console.log('Market: Rendering loading state');
         return (
           <Container centerContent py={10}>
             <Spinner size="xl" color="brand.500" />
@@ -464,6 +590,7 @@ const Market: React.FC = () => {
     }
 
     if (error) {
+        console.error('Market: Rendering error state', { error });
         return (
           <Container maxW="container.xl" py={8}>
             <Alert status="error" borderRadius="md">
@@ -473,6 +600,17 @@ const Market: React.FC = () => {
           </Container>
         );
     }
+
+    console.log('Market: Rendering main component', {
+      totalStocks: stocks.length,
+      filteredStocks: filteredStocks.length,
+      currentPage,
+      pageSize,
+      totalPages,
+      searchTerm,
+      viewMode,
+      cacheEntries: Object.keys(cache).length
+    });
 
     return (
         <Container maxW="container.xl" py={8}>
