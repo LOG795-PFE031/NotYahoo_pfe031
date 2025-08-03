@@ -537,28 +537,28 @@ const Market: React.FC = () => {
                 <Box as="table" w="full">
                   <Box as="thead">
                     <Box as="tr" bg="gray.50">
-                      <Box as="th" px={6} py={4} textAlign="left" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                      <Box as="th" px={4} py={3} textAlign="left" fontWeight="semibold" color="gray.600" borderBottom="1px solid" borderColor="gray.200" fontSize="sm">
                         Symbol
                       </Box>
-                      <Box as="th" px={6} py={4} textAlign="left" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                      <Box as="th" px={4} py={3} textAlign="left" fontWeight="semibold" color="gray.600" borderBottom="1px solid" borderColor="gray.200" fontSize="sm">
                         Company
                       </Box>
-                      <Box as="th" px={6} py={4} textAlign="right" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                      <Box as="th" px={4} py={3} textAlign="right" fontWeight="semibold" color="gray.600" borderBottom="1px solid" borderColor="gray.200" fontSize="sm">
                         Market Cap
                       </Box>
-                      <Box as="th" px={6} py={4} textAlign="right" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                      <Box as="th" px={4} py={3} textAlign="right" fontWeight="semibold" color="gray.600" borderBottom="1px solid" borderColor="gray.200" fontSize="sm">
                         Price
                       </Box>
-                      <Box as="th" px={6} py={4} textAlign="right" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                      <Box as="th" px={4} py={3} textAlign="right" fontWeight="semibold" color="gray.600" borderBottom="1px solid" borderColor="gray.200" fontSize="sm">
                         Change
                       </Box>
-                      <Box as="th" px={6} py={4} textAlign="right" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                      <Box as="th" px={4} py={3} textAlign="right" fontWeight="semibold" color="gray.600" borderBottom="1px solid" borderColor="gray.200" fontSize="sm">
                         % Change
                       </Box>
-                      <Box as="th" px={6} py={4} textAlign="center" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                      <Box as="th" px={4} py={3} textAlign="center" fontWeight="semibold" color="gray.600" borderBottom="1px solid" borderColor="gray.200" fontSize="sm">
                         Status
                       </Box>
-                      <Box as="th" px={6} py={4} textAlign="center" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                      <Box as="th" px={4} py={3} textAlign="center" fontWeight="semibold" color="gray.600" borderBottom="1px solid" borderColor="gray.200" fontSize="sm">
                         Action
                       </Box>
                     </Box>
