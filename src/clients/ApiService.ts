@@ -108,12 +108,12 @@ export interface NewsApiResponse {
 }
 
 export interface NewsData {
-    title: string;
-    publishedAt: string;
-    opinion: number;
-    url: string;
-    source: string;
-    confidence: number;
+  title: string;
+  publishedAt: string;
+  opinion: number;
+  url: string;
+  source: string;
+  confidence: number;
 };
 
 export interface Stock {
@@ -122,9 +122,9 @@ export interface Stock {
   lastSalePrice: string,
   marketCap: string,
   netChange: string,
-  percentageChange:  string,
-  sector:  string,
-  symbol:  string
+  percentageChange: string,
+  sector: string,
+  symbol: string
 }
 
 // Create base API clients with default configurations
@@ -154,12 +154,20 @@ class ApiService {
   async getStockPrediction(ticker: string, model_type: string): Promise<StockPrediction | null> {
     try {
 
-      const response = await predictionServiceClient.get(`/api/predict`,{
-        params:{
-          symbol: ticker,
-          model_type: model_type
+      const data = {
+        model_type: model_type,
+        symbol: ticker
+      };
+
+      const response = await predictionServiceClient.post(`/api/predict`, data,
+
+        {
+          params: {
+            symbol: ticker,
+            model_type: model_type
+          },
         }
-      });
+      );
 
       return response.data;
     } catch (error) {
@@ -181,7 +189,7 @@ class ApiService {
         date: article.publishedAt,
         sentiment_scores: {
           positive: article.opinion == 1 ? article.confidence : 0,
-          neutral: article.opinion == 0 ? article.confidence: 0,
+          neutral: article.opinion == 0 ? article.confidence : 0,
           negative: article.opinion == -1 ? article.confidence : 0
         }
       }));
@@ -197,8 +205,8 @@ class ApiService {
     try {
       const url = `/api/data/stock/historical`;
 
-      const response = await dataServiceClient.get<StockDataHistoryResponse>(url,{
-        params:{
+      const response = await dataServiceClient.get<StockDataHistoryResponse>(url, {
+        params: {
           symbol: ticker,
           start_date: start_date,
           end_date: end_date
@@ -277,7 +285,7 @@ class ApiService {
   }
 
   // Get news data for a ticker
-  async getNewsData(ticker: string): Promise<{ 
+  async getNewsData(ticker: string): Promise<{
     articles: Array<NewsData>,
     sentiment_metrics?: {
       positive: number,
@@ -288,36 +296,36 @@ class ApiService {
   }> {
     try {
       console.log(`ApiService: Getting news data for ${ticker}`);
-      
+
       try {
         // Direct API call to the news endpoint
         const response = await axios.get<NewsApiResponse>(`${import.meta.env.VITE_PREDICTION_SERVICE_URL || 'http://localhost:8000'}/api/data/news`, {
-          params:{
+          params: {
             symbol: ticker
           }
         });
         console.log(`ApiService: Got news data for ${ticker}:`, response.data);
-        
+
         // Transform API response to match our expected format
         const articles = response.data.articles.map(article => ({
           title: article.title,
           publishedAt: article.published_date,
           // Convert sentiment string to numeric opinion value
-          opinion: article.sentiment === "POSITIVE" ? 1 : 
-                  article.sentiment === "NEGATIVE" ? -1 : 0,
+          opinion: article.sentiment === "POSITIVE" ? 1 :
+            article.sentiment === "NEGATIVE" ? -1 : 0,
           url: article.url,
           source: article.source,
           confidence: article.confidence
         }));
-        
+
         console.log(`ApiService: Transformed news data for ${ticker}:`, articles);
-        return { 
+        return {
           articles,
           sentiment_metrics: response.data.sentiment_metrics
         };
       } catch (newsError) {
         console.error(`ApiService: Error in news API call for ${ticker}:`, newsError);
-        
+
         // Fallback to mock data if API call fails
         console.log(`ApiService: Using mock data for ${ticker}`);
         const mockArticles = [
@@ -346,7 +354,7 @@ class ApiService {
             confidence: 0.75
           }
         ];
-        
+
         // Mock sentiment metrics
         const mockMetrics = {
           positive: 0.33,
@@ -354,8 +362,8 @@ class ApiService {
           neutral: 0.34,
           average_confidence: 0.75
         };
-        
-        return { 
+
+        return {
           articles: mockArticles,
           sentiment_metrics: mockMetrics
         };

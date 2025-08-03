@@ -46,6 +46,8 @@ import {
   Tooltip,
   Legend
 } from 'recharts';
+import { Methods } from 'openai/resources/fine-tuning/methods.mjs';
+import { AuthServer } from '../../clients/AuthServer';
 
 // Define portfolio data types
 interface StockHolding {
@@ -97,6 +99,7 @@ const Portfolio: React.FC = () => {
   // State for portfolio data
   const [holdings, setHoldings] = useState<StockHolding[]>([]);
   const [loading, setLoading] = useState(true);
+  const [walletId, setWalletId] = useState('true');
   const [error, setError] = useState<string | null>(null);
   
   const [newStock, setNewStock] = useState<Partial<StockHolding>>({
@@ -105,6 +108,8 @@ const Portfolio: React.FC = () => {
     shares: 0,
     purchasePrice: 0
   });
+
+  const authServer = new AuthServer(import.meta.env.VITE_API_AUTH_URL || 'https://localhost:55604');
 
   // Fetch portfolio data
   useEffect(() => {
@@ -115,74 +120,103 @@ const Portfolio: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const portfolioApiUrl = import.meta.env.VITE_API_PORTFOLIO_URL || 'https://localhost:55616';
-      const stocksApiUrl = import.meta.env.VITE_API_STOCKS_URL || 'https://localhost:55611';
+      // const portfolioApiUrl = import.meta.env.VITE_API_PORTFOLIO_URL || 'https://localhost:55616';
+      // const stocksApiUrl = import.meta.env.VITE_API_STOCKS_URL || 'https://localhost:55611';
       
-      try {
+      // try {
         // Get user's portfolio (shares)
-        const portfolioResponse = await axios.get(`${portfolioApiUrl}/portfolio`);
+        // console.log('dans le bhay portfols')
+
+        const walletIdResponse = await authServer.getUserWalletId() 
+        setWalletId(walletIdResponse.data.value)
+        const myStock: StockHolding = {
+          id: '1',
+          symbol: 'AAPL',
+          name: 'Apple Inc.',
+          shares: 10,
+          purchasePrice: 150.00,
+          currentPrice: 180.50
+        };
+        const tab = []
+        tab.push(myStock)
+        setHoldings(tab)
+        // const sharesResponse = await authServer.getUserShares(walletIdResponse.data.value)
+        // console.log(sharesResponse)
+
+        // console.log(portfolioApiUrl)
+        // const portfolioResponse = await fetch(`${portfolioApiUrl}/portfolio`,{
+        //   method: 'GET',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //   },
+        // });
+
+      //   console.log('dans le bhay portfols')
+      //   const portfolioResponse = await axios.get(`${portfolioApiUrl}/portfolio`);
+      //   console.log(portfolioResponse)
         
-        if (!portfolioResponse.data || !portfolioResponse.data.shareVolumes) {
-          // Handle empty but valid response
-          setHoldings([]);
-          setLoading(false);
-          return;
-        }
+      //   console.log('dans le bhay portfols')
+      //   if (!portfolioResponse.data || !portfolioResponse.data.shareVolumes) {
+      //     // Handle empty but valid response
+      //     setHoldings([]);
+      //     setLoading(false);
+      //     return;
+      //   }
         
-        const shares: ApiShareData[] = portfolioResponse.data.shareVolumes;
+      //   const shares: ApiShareData[] = portfolioResponse.data.shareVolumes;
         
-        // Create StockHolding objects with placeholder data
-        const processedHoldings: StockHolding[] = [];
+      //   // Create StockHolding objects with placeholder data
+      //   const processedHoldings: StockHolding[] = [];
         
-        // Get current price for each stock and calculate metrics
-        for (const share of shares) {
-          try {
-            // Get current price from stocks API
-            const live = new Date().toISOString();
-            const priceResponse = await axios.get(`${stocksApiUrl}/stocks/${share.symbol}/${live}`);
+      //   // // Get current price for each stock and calculate metrics
+      //   for (const share of shares) {
+      //     try {
+      //       // Get current price from stocks API
+      //       const live = new Date().toISOString();
+      //       const priceResponse = await axios.patch(`${stocksApiUrl}/stocks/${share.symbol}/${live}`);
             
-            const currentPrice = priceResponse.data?.value || 0;
+      //       const currentPrice = priceResponse.data?.value || 0;
             
-            // For now, we don't have purchase price data from the API, so we'll estimate it
-            // In a real app, this should come from transaction history
-            // We'll estimate it as 80-90% of current price for demonstration
-            const estimateFactor = 0.8 + (Math.random() * 0.1); // 80-90% of current price
-            const purchasePrice = currentPrice * estimateFactor;
+      //       // For now, we don't have purchase price data from the API, so we'll estimate it
+      //       // In a real app, this should come from transaction history
+      //       // We'll estimate it as 80-90% of current price for demonstration
+      //       const estimateFactor = 0.8 + (Math.random() * 0.1); // 80-90% of current price
+      //       const purchasePrice = currentPrice * estimateFactor;
             
-            // Add to holdings
-            processedHoldings.push({
-              id: crypto.randomUUID(),
-              symbol: share.symbol,
-              name: STOCK_NAMES[share.symbol] || `${share.symbol} Stock`,
-              shares: share.volume,
-              purchasePrice: parseFloat(purchasePrice.toFixed(2)),
-              currentPrice: parseFloat(currentPrice.toFixed(2))
-            });
-          } catch (err) {
-            console.error(`Error fetching price for ${share.symbol}:`, err);
-            // Still add the stock but with placeholder price data
-            processedHoldings.push({
-              id: crypto.randomUUID(),
-              symbol: share.symbol,
-              name: STOCK_NAMES[share.symbol] || `${share.symbol} Stock`,
-              shares: share.volume,
-              purchasePrice: 0,
-              currentPrice: 0
-            });
-          }
-        }
+      //       // Add to holdings
+      //       processedHoldings.push({
+      //         id: crypto.randomUUID(),
+      //         symbol: share.symbol,
+      //         name: STOCK_NAMES[share.symbol] || `${share.symbol} Stock`,
+      //         shares: share.volume,
+      //         purchasePrice: parseFloat(purchasePrice.toFixed(2)),
+      //         currentPrice: parseFloat(currentPrice.toFixed(2))
+      //       });
+      //     } catch (err) {
+      //       console.error(`Error fetching price for ${share.symbol}:`, err);
+      //       // Still add the stock but with placeholder price data
+      //       processedHoldings.push({
+      //         id: crypto.randomUUID(),
+      //         symbol: share.symbol,
+      //         name: STOCK_NAMES[share.symbol] || `${share.symbol} Stock`,
+      //         shares: share.volume,
+      //         purchasePrice: 0,
+      //         currentPrice: 0
+      //       });
+      //     }
+      //   }
         
-        setHoldings(processedHoldings);
-      } catch (err) {
-        // Check if this is a 404 error (portfolio not found or empty)
-        if (axios.isAxiosError(err) && err.response?.status === 404) {
-          // This is not really an error - just an empty portfolio
-          setHoldings([]);
-        } else {
-          // This is a real error
-          throw err;
-        }
-      }
+      //   setHoldings(processedHoldings);
+      // } catch (err) {
+      //   // Check if this is a 404 error (portfolio not found or empty)
+      //   if (axios.isAxiosError(err) && err.response?.status === 404) {
+      //     // This is not really an error - just an empty portfolio
+      //     setHoldings([]);
+      //   } else {
+      //     // This is a real error
+      //     throw err;
+      //   }
+      // }
     } catch (err) {
       console.error('Error fetching portfolio data:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch portfolio data');
@@ -235,7 +269,10 @@ const Portfolio: React.FC = () => {
     
     try {
       const apiUrl = import.meta.env.VITE_API_PORTFOLIO_URL || 'https://localhost:55616';
-      await axios.patch(`${apiUrl}/portfolio/buy/${newStock.symbol}/${newStock.shares}`);
+      // await axios.patch(`${apiUrl}/portfolio/buy/${newStock.symbol}/${newStock.shares}/${walletId}`);
+      console.log(newStock.symbol)
+      console.log(newStock.shares)
+      await axios.patch(`${apiUrl}/portfolio/buy/${newStock.symbol}/${newStock.shares}/${walletId}`);
       
       toast({
         title: "Stock purchased",

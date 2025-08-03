@@ -215,6 +215,7 @@ const StockDetails: React.FC = () => {
 
           const predictionData = await apiService.getStockPrediction(ticker, model);
           setPrediction(predictionData);
+          setButtonClickable(false)
           setLoading(false)
         }
       })
