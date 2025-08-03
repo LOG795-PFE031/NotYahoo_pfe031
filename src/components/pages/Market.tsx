@@ -46,7 +46,6 @@ const getStockIcon = (sentiment: string) => {
 const TopGainersCard: React.FC<{ stocks: Stock[] }> = ({ stocks }) => {
   const navigate = useNavigate();
   
-  // 🚀 PERFORMANCE: Memoized top gainers calculation
   const topGainers = useMemo(() => {
     return stocks
       .filter(stock => stock.deltaIndicator === 'up')
@@ -629,7 +628,7 @@ const Market: React.FC = () => {
                             fontWeight="bold"
                             color="gray.800"
                           >
-                            ${stock.lastSalePrice}
+                            {stock.lastSalePrice}
                           </Text>
                           <Text
                             fontSize="sm"
