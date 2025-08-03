@@ -17,6 +17,7 @@ interface Cache {
 
 // Cache utility functions
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+const CACHE_STORAGE_KEY = 'market_cache';
 
 const getCacheKey = (endpoint: string, params?: any): string => {
   const paramString = params ? JSON.stringify(params) : '';
@@ -25,6 +26,37 @@ const getCacheKey = (endpoint: string, params?: any): string => {
 
 const isCacheValid = (entry: CacheEntry<any>): boolean => {
   return Date.now() < entry.expiresAt;
+};
+
+// Persistent cache functions using localStorage
+const getPersistentCache = (): Cache => {
+  try {
+    const cached = localStorage.getItem(CACHE_STORAGE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      // Filter out expired entries when loading from storage
+      const validEntries: Cache = {};
+      Object.keys(parsed).forEach(key => {
+        if (isCacheValid(parsed[key])) {
+          validEntries[key] = parsed[key];
+        }
+      });
+      console.log(`Market: Loaded ${Object.keys(validEntries).length} valid cache entries from localStorage`);
+      return validEntries;
+    }
+  } catch (error) {
+    console.error('Market: Error loading cache from localStorage:', error);
+  }
+  return {};
+};
+
+const setPersistentCache = (cache: Cache): void => {
+  try {
+    localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(cache));
+    console.log(`Market: Saved ${Object.keys(cache).length} cache entries to localStorage`);
+  } catch (error) {
+    console.error('Market: Error saving cache to localStorage:', error);
+  }
 };
 
 const getCachedData = (cache: Cache, key: string): any => {
@@ -44,6 +76,8 @@ const setCachedData = (cache: Cache, key: string, data: any): void => {
     expiresAt: Date.now() + CACHE_DURATION
   };
   console.log(`Market: Cached data for key: ${key}, expires at: ${new Date(cache[key].expiresAt).toLocaleTimeString()}`);
+  // Save to localStorage immediately
+  setPersistentCache(cache);
 };
 
 const formatMarketCap = (marketCap: string) => {
@@ -398,7 +432,7 @@ const Market: React.FC = () => {
     const toast = useToast();
     
     // Cache state
-    const [cache, setCache] = useState<Cache>({});
+    const [cache, setCache] = useState<Cache>(getPersistentCache());
       
     const [loading, setLoading] = useState(true);
     const [stocks, setStocks] = useState<Stock[]>([])
@@ -421,7 +455,8 @@ const Market: React.FC = () => {
       console.log('Market: Fetching stocks data from API');
       const data = await apiService.getStocks();
       setCachedData(cache, cacheKey, data);
-      setCache({ ...cache }); // Trigger re-render
+      // Update local state to trigger re-render
+      setCache(prevCache => ({ ...prevCache, [cacheKey]: cache[cacheKey] }));
       return data;
     }, [cache]);
 
@@ -442,6 +477,8 @@ const Market: React.FC = () => {
       if (initialSize !== finalSize) {
         console.log(`Market: Cache cleanup removed ${initialSize - finalSize} expired entries`);
         setCache(newCache);
+        // Persist the cleaned cache
+        setPersistentCache(newCache);
       }
     }, [cache]);
 
@@ -457,6 +494,13 @@ const Market: React.FC = () => {
         console.log(`Market: Valid cache entries:`, validEntries);
       }
     }, [cache]);
+
+    // Manual cache clearing function (for debugging)
+    const clearCache = useCallback(() => {
+      console.log('Market: Clearing all cache');
+      setCache({});
+      localStorage.removeItem(CACHE_STORAGE_KEY);
+    }, []);
 
     // Cleanup expired cache entries periodically
     useEffect(() => {
@@ -615,10 +659,24 @@ const Market: React.FC = () => {
     return (
         <Container maxW="container.xl" py={8}>
           <Box mb={6}>
-            <Heading size="lg" mb={2} color="gray.700">Market Overview</Heading>
-            <Text color="gray.600" fontSize="md">
-              Real-time stock data and market performance
-            </Text>
+            <Flex justify="space-between" align="center">
+              <Box>
+                <Heading size="lg" mb={2} color="gray.700">Market Overview</Heading>
+                <Text color="gray.600" fontSize="md">
+                  Real-time stock data and market performance
+                </Text>
+              </Box>
+              {/* Debug cache button - remove in production */}
+              <Button
+                size="sm"
+                colorScheme="orange"
+                variant="outline"
+                onClick={clearCache}
+                title="Clear cache (debug)"
+              >
+                Clear Cache
+              </Button>
+            </Flex>
           </Box>
 
           {/* Top Gainers Card */}
