@@ -153,18 +153,27 @@ class ApiService {
   // Get stock prediction for a ticker
   async getStockPrediction(ticker: string, model_type: string): Promise<StockPrediction | null> {
     try {
+      // First check if the model exists
+      const modelExists = await this.checkModelExists(ticker, model_type);
+      if (!modelExists) {
+        console.log(`ApiService: Model ${model_type}_${ticker} does not exist, skipping prediction`);
+        return null;
+      }
+
+      // Ensure proper case: model type lowercase, ticker uppercase
+      const normalizedModelType = model_type.toLowerCase();
+      const normalizedTicker = ticker.toUpperCase();
 
       const data = {
-        model_type: model_type,
-        symbol: ticker
+        model_type: normalizedModelType,
+        symbol: normalizedTicker
       };
 
       const response = await predictionServiceClient.post(`/api/predict`, data,
-
         {
           params: {
-            symbol: ticker,
-            model_type: model_type
+            symbol: normalizedTicker,
+            model_type: normalizedModelType
           },
         }
       );
@@ -258,6 +267,31 @@ class ApiService {
     }
   }
 
+  // Check if a specific model exists for a ticker
+  async checkModelExists(ticker: string, modelType: string): Promise<boolean> {
+    try {
+      const url = `/api/models`;
+      const response = await stockAIServiceClient.get(url);
+      const models = response.data.models || [];
+      
+      // Ensure proper case: model type lowercase, ticker uppercase
+      const normalizedModelType = modelType.toLowerCase();
+      const normalizedTicker = ticker.toUpperCase();
+      const modelName = `${normalizedModelType}_${normalizedTicker}`;
+      
+      const modelExists = models.some((model: any) => 
+        model.name === modelName && 
+        model.latest_versions?.some((version: any) => version.status === 'READY')
+      );
+      
+      console.log(`ApiService: Looking for model ${modelName}, exists: ${modelExists}`);
+      return modelExists;
+    } catch (error) {
+      console.error(`Error checking if model exists for ${ticker}:`, error);
+      return false;
+    }
+  }
+
   // Fetch all stocks
   async getStocks(): Promise<Stock[]> {
     try {
@@ -273,9 +307,13 @@ class ApiService {
   // Fetch all stocks
   async trainStock(ticker: string, model_type: string): Promise<number> {
     try {
+      // Ensure proper case: model type lowercase, ticker uppercase
+      const normalizedModelType = model_type.toLowerCase();
+      const normalizedTicker = ticker.toUpperCase();
+      
       const url = `/api/train`;
       const response = await stockAIServiceClient.post(
-        `${url}?symbol=${ticker}&model_type=${model_type}`
+        `${url}?symbol=${normalizedTicker}&model_type=${normalizedModelType}`
       );
       return response.status;
     } catch (error) {

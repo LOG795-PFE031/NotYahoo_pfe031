@@ -52,7 +52,7 @@ const StockDetails: React.FC = () => {
   const [stockName, setStockName] = useState<string>('');
   const [error, setError] = useState('');
   const [model, setModel] = useState('lstm');
-  const [allModelType, setAllModelType] = useState([])
+  const [allModelType, setAllModelType] = useState<string[]>([])
   
   useEffect(() => {
     const fetchData = async () => {
@@ -68,7 +68,7 @@ const StockDetails: React.FC = () => {
 
         const { startDate, endDate } = getBusinessDateRange();
 
-        // Fetch prediction data
+        // Fetch prediction data (will automatically check if model exists)
         const predictionData = await apiService.getStockPrediction(ticker, model);
         setPrediction(predictionData);
         
@@ -183,6 +183,22 @@ const StockDetails: React.FC = () => {
     
     try {
       if (!ticker) throw new Error('Ticker is undefined');
+      
+      // Check if the model exists before attempting prediction
+      const modelExists = await apiService.checkModelExists(ticker, model_type);
+      if (!modelExists) {
+        console.log(`StockDetails: Model ${model_type}_${ticker} does not exist`);
+        setPrediction(null);
+        toast({
+          title: 'Model Not Available',
+          description: `No trained model found for ${ticker} with ${model_type}. Please train the model first.`,
+          status: 'warning',
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+      
       const dataPredict = await apiService.getStockPrediction(ticker, model_type);
       setPrediction(dataPredict);
     } catch (err) {
