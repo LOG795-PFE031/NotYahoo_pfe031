@@ -8,15 +8,9 @@ import {
   Flex,
   Grid,
   GridItem,
-  Badge,
   Spinner,
   Alert,
   AlertIcon,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   Stat,
   StatLabel,
   StatNumber,
@@ -24,19 +18,7 @@ import {
   useToast,
   Button
 } from '@chakra-ui/react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  AreaChart,
-  Area
-} from 'recharts';
-import apiService, { StockPrediction, SentimentAnalysis, StockData } from '../../clients/ApiService';
+import apiService, { StockData } from '../../clients/ApiService';
 import { getBusinessDateRange } from '../../utils/dateUtils';
 import StockGraphique from './stocksDetails-Sub-Components/StockGraphique';
 import Prediction from './stocksDetails-Sub-Components/Prediction';
@@ -45,17 +27,10 @@ import StockInformation from './stocksDetails-Sub-Components/StockInformation';
 const StockDetails: React.FC = () => {
   const { ticker } = useParams<{ ticker: string }>();
   const toast = useToast();
-  // // const [buttonClickable, setButtonClickable] = useState(false);
-
   const [loading, setLoading] = useState(true);
-  // // const [prediction, setPrediction] = useState<StockPrediction | null>(null);
-  // // const [sentimentData, setSentimentData] = useState<SentimentAnalysis[]>([]);
   const [historicalData, setHistoricalData] = useState<{date: string, price: number, volume:number}[]>([]);
   const [stockName, setStockName] = useState<string>('');
   const [error, setError] = useState('');
-  // const [stockInformation, setStockInformation] = useState();
-  // const [model, setModel] = useState('lstm');
-  // const [allModelType, setAllModelType] = useState([])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,21 +40,6 @@ const StockDetails: React.FC = () => {
       setError('');
 
       try {
-
-        // const stockInfos = await apiService.getStockInformation(ticker)
-        // console.log(stockInfos)
-        // setStockName(stockInfos.name)
-        // Fetch all possible model type
-        // const listOfModelType = await apiService.getModelsTypes()
-        // setAllModelType(listOfModelType.types)
-
-        // Fetch prediction data
-        // const predictionData = await apiService.getStockPrediction(ticker, model);
-        // setPrediction(predictionData);
-
-        // Fetch sentiment analysis
-        // const sentimentAnalysis = await apiService.getSentimentAnalysis(ticker);
-        // setSentimentData(sentimentAnalysis);
 
         // Fetch historical data
         const { startDate, endDate } = getBusinessDateRange();
@@ -97,7 +57,7 @@ const StockDetails: React.FC = () => {
       } catch (err) {
         console.error('Error fetching stock data:', err);
         setError('Failed to load stock data. Please try again later.');
-        // setLoading(false);
+        setLoading(false);
 
         toast({
           title: 'Error',
@@ -137,109 +97,6 @@ const StockDetails: React.FC = () => {
     };
   };
 
-  // Calculate sentiment averages
-  // const calculateSentimentAverages = () => {
-  //   if (sentimentData.length === 0) return { positive: 0, neutral: 0, negative: 0 };
-
-  //   const totals = sentimentData.reduce(
-  //     (acc, item) => {
-  //       acc.positive += item.sentiment_scores.positive;
-  //       acc.neutral += item.sentiment_scores.neutral;
-  //       acc.negative += item.sentiment_scores.negative;
-  //       return acc;
-  //     },
-  //     { positive: 0, neutral: 0, negative: 0 }
-  //   );
-
-  //   const count = sentimentData.length;
-  //   return {
-  //     positive: totals.positive / count,
-  //     neutral: totals.neutral / count,
-  //     negative: totals.negative / count,
-  //   };
-  // };
-
-  // const sentimentAverages = calculateSentimentAverages();
-  // const dominantSentiment = Object.entries(sentimentAverages).reduce(
-  //   (max, [key, value]) => (value > max.value ? { key, value } : max),
-  //   { key: 'neutral', value: 0 }
-  // ).key;
-
-  // const getSentimentColor = (sentiment: string) => {
-  //   switch (sentiment) {
-  //     case 'positive':
-  //       return 'green.500';
-  //     case 'negative':
-  //       return 'red.500';
-  //     default:
-  //       return 'gray.500';
-  //   }
-  // };
-
-
-  // const updateModelType = async (model_type: string) =>{
-  //   setModel(model_type)
-  //   // setLoading(true);
-
-  //   try {
-  //     if (!ticker) throw new Error('Ticker is undefined');
-  //     const dataPredict = await apiService.getStockPrediction(ticker, model_type);
-  //     setPrediction(dataPredict);
-  //   } catch (err) {
-  //     console.error('Error fetching prediction:', err);
-  //     toast({
-  //         title: 'Error',
-  //         description: 'Failed to load stock data.',
-  //         status: 'error',
-  //         duration: 5000,
-  //         isClosable: true,
-  //     });
-  //   } finally {
-  //     // setLoading(false);
-  //   }
-  // }
-
-  // const trainData = async () =>{
-  //   try {
-  //     if (!ticker) throw new Error('Ticker is undefined');
-  //     apiService.trainStock(ticker, model).then(async (response) =>{
-  //       if(response == 200 ){
-  //         // setLoading(true)
-  //         toast({
-  //         title: 'Training Stock Successful',
-  //         description: 'You have been successfully train the stock',
-  //         status: 'success',
-  //         duration: 3000,
-  //         isClosable: true,
-  //         });
-
-  //         const predictionData = await apiService.getStockPrediction(ticker, model);
-  //         setPrediction(predictionData);
-  //         // setLoading(false)
-  //       }
-  //     })
-  //   } catch (err) {
-  //     console.error('Error fetching prediction:', err);
-  //     toast({
-  //         title: 'Error',
-  //         description: 'Failed to train stock data.',
-  //         status: 'error',
-  //         duration: 5000,
-  //         isClosable: true,
-  //     });
-  //   } 
-  // }
-
-
-  // if (loading) {
-  //   return (
-  // <Container centerContent py={10}>
-  //   <Spinner size="xl" color="brand.500" />
-  //   <Text mt={4}>Loading stock data...</Text>
-  // </Container>
-  //   );
-  // }
-
   if (loading) {
     return (
       <Container maxW="container.xl" py={8}>
@@ -260,42 +117,21 @@ const StockDetails: React.FC = () => {
     )
   }
 
-  // if (error) {
-  //   return (
-  //     <Container maxW="container.xl" py={8}>
-  //       <Alert status="error" borderRadius="md">
-  //         <AlertIcon />
-  //         {error}
-  //       </Alert>
-  //     </Container>
-  //   );
-  // }
+  if (error) {
+    return (
+      <Container maxW="container.xl" py={8}>
+        <Alert status="error" borderRadius="md">
+          <AlertIcon />
+          {error}
+        </Alert>
+      </Container>
+    );
+  }
 
   return (
     <Container maxW="container.xl" py={8}>
       <Box mb={8}>
-        {/* <Flex justify="space-between" align="center" mb={4}>
-          <Box>
-            <Heading as="h1" size="xl">
-              {ticker}
-            </Heading>
-            <Text fontSize="lg" color="gray.600">
-              {stockName || 'Stock Details'}
-            </Text>
-          </Box> */}
-
           <StockInformation ticker={ticker} stockName= {stockName}/>
-          {/* <Box>
-            <Badge 
-              colorScheme={dominantSentiment === 'positive' ? 'green' : dominantSentiment === 'negative' ? 'red' : 'gray'} 
-              fontSize="md" 
-              p={2} 
-              borderRadius="md"
-            >
-              {dominantSentiment.charAt(0).toUpperCase() + dominantSentiment.slice(1)} Sentiment
-            </Badge>
-          </Box>
-        </Flex> */}
 
         {/* Price information and prediction */}
         <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6} mb={8}>
@@ -327,48 +163,6 @@ const StockDetails: React.FC = () => {
             </Box>
           </GridItem>
 
-          {/* <GridItem>
-            <Box p={5} shadow="md" borderWidth="1px" borderRadius="md">
-              <Heading size="md" mb={4}>Price Prediction</Heading>
-              {prediction ? (
-                <Stat>
-                  <StatLabel fontSize="md">Next trading day's predicted price</StatLabel>
-                  <StatNumber fontSize="3xl">${prediction.predicted_price.toFixed(2)}</StatNumber>
-                  <StatHelpText>
-                    <Flex align="center" justify="space-between">
-                      <Text>Confidence: {(prediction.confidence * 100).toFixed(1)}%</Text>
-                    </Flex>
-                  </StatHelpText>
-                </Stat>
-              ) : (
-                <Text>No prediction data available</Text>
-              )}
-              <Flex align="center" justify="space-between">
-                { !prediction ? (
-                  <Button 
-                  size="sm" 
-                  colorScheme="brand"
-                  disabled = {buttonClickable}
-                  onClick={() => { setButtonClickable(true); trainData()}}
-                >
-                  Train Data
-                </Button>
-
-                ): ""
-
-                }
-                
-                <Text fontSize="sm" color="gray.500">Model:</Text>
-                <select value={model} onChange={(type) => updateModelType(type.target.value)} style={{backgroundColor:'beige', width:'150px'}}>
-                {allModelType.map((val, index) => (
-                  <option key={index} value={val}>
-                    {val}
-                  </option>
-                  ))}
-                </select>
-              </Flex>
-            </Box>
-          </GridItem> */}
           <Prediction ticker={ticker}/>
         </Grid>
       </Box>

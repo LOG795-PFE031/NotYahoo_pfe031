@@ -25,7 +25,6 @@ import {
     Area
 } from 'recharts';
 import apiService, { SentimentAnalysis } from '../../../clients/ApiService';
-// import apiService from '../../../clients/ApiService';
 
 type StockInformationProps = {
     ticker: string | undefined;

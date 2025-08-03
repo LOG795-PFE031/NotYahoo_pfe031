@@ -42,9 +42,6 @@ interface NewsCache {
   };
 }
 
-// Default tickers
-const DEFAULT_TICKERS = ["AAPL", "NVDA", "TSLA"];
-
 // Cache storage
 const newsCache: Record<string, NewsCache> = {};
 
@@ -52,7 +49,7 @@ const News: React.FC<params> = ({ searchTerm, isLoggedIn }) => {
   const [newsData, setNewsData] = useState<NewsData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentTicker, setCurrentTicker] = useState<string>(searchTerm || DEFAULT_TICKERS[0]);
+  const [currentTicker, setCurrentTicker] = useState<string>(searchTerm);
   const [sentimentMetrics, setSentimentMetrics] = useState<{ positive: number, negative: number, neutral: number } | null>(null);
   const [stocks, setStocks] = useState<Stock[]>([]);
 
@@ -263,17 +260,6 @@ const News: React.FC<params> = ({ searchTerm, isLoggedIn }) => {
 
           {/* Ticker selection */}
           <Flex wrap="wrap" gap={2}>
-            {/* {DEFAULT_TICKERS.map(ticker => (
-              <Button
-                key={ticker}
-                onClick={() => handleTickerChange(ticker)}
-                size="sm"
-                colorScheme={currentTicker === ticker ? "brand" : "gray"}
-                variant={currentTicker === ticker ? "solid" : "ghost"}
-              >
-                {ticker}
-              </Button>  
-            ))} */}
             <select value={currentTicker} style={{ backgroundColor: 'DeepSkyBlue', width: '150px', borderRadius: '15px' }} onChange={(type) => updateStockSelected(type.target.value)}>
               {stocks.map((stock, index) => (
                 <option key={index} value={stock.symbol}>

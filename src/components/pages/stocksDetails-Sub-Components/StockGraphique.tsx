@@ -24,8 +24,7 @@ import {
     AreaChart,
     Area
 } from 'recharts';
-import { getBusinessDateRange } from '../../../utils/dateUtils';
-import apiService, { SentimentAnalysis, StockData } from '../../../clients/ApiService';
+import apiService, { SentimentAnalysis } from '../../../clients/ApiService';
 
 
 type StockGraphiqueProps = {
@@ -34,7 +33,6 @@ type StockGraphiqueProps = {
 };
 
 const StockGraphique: React.FC<StockGraphiqueProps> = ({ ticker, historicalData }) => {
-    // const [historicalData, setHistoricalData] = useState<{ date: string, price: number, volume: number }[]>([]);
     const [loading, setLoading] = useState(true);
     const [sentimentData, setSentimentData] = useState<SentimentAnalysis[]>([]);
 
@@ -44,19 +42,9 @@ const StockGraphique: React.FC<StockGraphiqueProps> = ({ ticker, historicalData 
 
         const fetchInformation = async () => {
             try {
-
                 // Fetch sentiment analysis
                 const sentimentAnalysis = await apiService.getSentimentAnalysis(ticker);
                 setSentimentData(sentimentAnalysis);
-
-                // Fetch historical data
-                // const { startDate, endDate } = getBusinessDateRange();
-                // const historicalDataFetch = await apiService.getStockDataHistory(ticker, startDate, endDate);
-
-
-                // const formattedHistoricalData = formatHistoricalData(historicalDataFetch.data)
-                // setHistoricalData(formattedHistoricalData)
-
                 setLoading(false);
             }
             catch (error) {
@@ -67,16 +55,6 @@ const StockGraphique: React.FC<StockGraphiqueProps> = ({ ticker, historicalData 
 
         fetchInformation()
     }, [])
-
-    const formatHistoricalData = (rawHistoricalData: StockData[]) => {
-        const data = rawHistoricalData.map(entry => ({
-            date: entry.Date.split('T')[0],          // Extract YYYY-MM-DD
-            price: entry.Close,                      // Using 'Close' as the price
-            volume: entry.Volume,
-        }));
-
-        return data;
-    };
 
     const getSentimentColor = (sentiment: string) => {
         switch (sentiment) {
