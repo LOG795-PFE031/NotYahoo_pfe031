@@ -48,6 +48,7 @@ const StockDetails: React.FC = () => {
   const [prediction, setPrediction] = useState<StockPrediction | null>(null);
   const [sentimentData, setSentimentData] = useState<SentimentAnalysis[]>([]);
   const [historicalData, setHistoricalData] = useState<{date: string, price: number, volume:number}[]>([]);
+  const [currentData, setCurrentData] = useState<StockData | null>(null);
   const [stockName, setStockName] = useState<string>('');
   const [error, setError] = useState('');
   const [model, setModel] = useState('lstm');
@@ -65,6 +66,8 @@ const StockDetails: React.FC = () => {
         const listOfModelType = await apiService.getModelsTypes()
         setAllModelType(listOfModelType.types)
 
+        const { startDate, endDate } = getBusinessDateRange();
+
         // Fetch prediction data
         const predictionData = await apiService.getStockPrediction(ticker, model);
         setPrediction(predictionData);
@@ -74,16 +77,22 @@ const StockDetails: React.FC = () => {
         setSentimentData(sentimentAnalysis);
         
         // Fetch historical data
-        const { startDate, endDate } = getBusinessDateRange();
+        // const { startDate, endDate } = getBusinessDateRange();
+        // const currentData = await apiService.getStockDataHistory(ticker, startDate, endDate);
+        const currentData = await apiService.getStockData(ticker);
+
         const historicalData = await apiService.getStockDataHistory(ticker, startDate, endDate);
 
-        // Set the company name from the response
-        setStockName(historicalData.name);
-
-        // Set the historical data as before
         const formattedHistoricalData = formatHistoricalData(historicalData.data);
         setHistoricalData(formattedHistoricalData);
-        
+    
+
+        // Set the company name from the response
+        setStockName(currentData.name);
+
+        // Get the first (and only) data point from the array
+        const currentStockData = currentData.data[0];
+        setCurrentData(currentStockData);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching stock data:', err);
@@ -275,7 +284,7 @@ const StockDetails: React.FC = () => {
               <Stat>
                 <StatLabel fontSize="md">Last traded price</StatLabel>
                 <StatNumber fontSize="3xl">
-                  ${historicalData.length > 0 ? historicalData[historicalData.length - 1].price.toFixed(2) : 'N/A'}
+                  ${currentData ? currentData.Close.toFixed(2) : 'N/A'}
                 </StatNumber>
                 <StatHelpText>
                   {(() => {

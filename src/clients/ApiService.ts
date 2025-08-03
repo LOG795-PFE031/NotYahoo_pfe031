@@ -68,6 +68,19 @@ export interface StockDataHistoryResponse {
   timestamp: string;
 }
 
+export interface StockDataResponse {
+  symbol: string;
+  name: string;
+  data: StockData[];
+  meta: {
+    message: string;
+    version: string;
+    documentation: string;
+    endpoints: string[];
+  };
+  timestamp: string;
+}
+
 // Define the real News API response type
 export interface NewsApiResponse {
   symbol: string;
@@ -193,6 +206,32 @@ class ApiService {
       });
 
       return response.data;
+    } catch (error) {
+      console.error(`Error fetching stock data for ${ticker}:`, error);
+      throw error;
+    }
+  }
+
+  async getStockData(ticker: string): Promise<StockDataResponse> {
+    try {
+      const url = `/api/data/stock/current`;
+      const response = await dataServiceClient.get<StockDataResponse>(url,{
+        params:{
+          symbol: ticker
+        }
+      });
+      return {
+        symbol: response.data.symbol,
+        name: response.data.name,
+        data: response.data.data,
+        meta: {
+          message: response.data.meta.message,
+          version: response.data.meta.version,
+          documentation: response.data.meta.documentation,
+          endpoints: response.data.meta.endpoints
+        },
+        timestamp: response.data.timestamp
+      };
     } catch (error) {
       console.error(`Error fetching stock data for ${ticker}:`, error);
       throw error;
