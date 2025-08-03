@@ -1,8 +1,8 @@
-import { Alert, AlertIcon, Container, Spinner, Text, useToast, Box, Heading, Badge, Flex, IconButton, Tooltip, Button, Select, HStack, SimpleGrid } from "@chakra-ui/react";
+import { Alert, AlertIcon, Container, Spinner, Text, useToast, Box, Heading, Badge, Flex, IconButton, Tooltip, Button, Select, HStack, SimpleGrid, Input, InputGroup, InputLeftElement, ButtonGroup } from "@chakra-ui/react";
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import apiService, { Stock} from '../../clients/ApiService';
 import { useNavigate } from "react-router-dom";
-import { IconArrowUp, IconArrowDown, IconMinus, IconExternalLink, IconChevronLeft, IconChevronRight, IconTrendingUp } from '@tabler/icons-react';
+import { IconArrowUp, IconArrowDown, IconMinus, IconExternalLink, IconChevronLeft, IconChevronRight, IconTrendingUp, IconSearch, IconTable, IconCards } from '@tabler/icons-react';
 
 const formatMarketCap = (marketCap: string) => {
   const num = parseFloat(marketCap.replace(/[$,]/g, ''));
@@ -265,6 +265,94 @@ const StockTableRow = React.memo<{
 
 StockTableRow.displayName = 'StockTableRow';
 
+// StockSearchAndFilters Component
+interface StockSearchAndFiltersProps {
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  viewMode: 'table' | 'cards';
+  onViewModeChange: (mode: 'table' | 'cards') => void;
+}
+
+const StockSearchAndFilters: React.FC<StockSearchAndFiltersProps> = ({
+  searchTerm,
+  onSearchChange,
+  viewMode,
+  onViewModeChange
+}) => {
+  return (
+    <Box
+      bg="white"
+      borderRadius="xl"
+      boxShadow="lg"
+      border="1px solid"
+      borderColor="gray.200"
+      p={6}
+      mb={6}
+    >
+      <Flex
+        direction={{ base: "column", md: "row" }}
+        gap={4}
+        align={{ base: "stretch", md: "center" }}
+      >
+        {/* Search Input */}
+        <Box flex="1">
+          <InputGroup>
+            <InputLeftElement pointerEvents="none">
+              <IconSearch size={20} color="#6b7280" />
+            </InputLeftElement>
+            <Input
+              placeholder="Search stocks by symbol or company name..."
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              size="md"
+              borderRadius="lg"
+              border="1px solid"
+              borderColor="gray.300"
+              _focus={{
+                borderColor: "blue.500",
+                boxShadow: "0 0 0 1px var(--chakra-colors-blue-500)"
+              }}
+              _hover={{
+                borderColor: "gray.400"
+              }}
+            />
+          </InputGroup>
+        </Box>
+
+        {/* View Mode Toggle */}
+        <Box>
+          <ButtonGroup size="md" isAttached variant="outline">
+            <Button
+              leftIcon={<IconTable size={16} />}
+              onClick={() => onViewModeChange('table')}
+              colorScheme={viewMode === 'table' ? 'blue' : 'gray'}
+              variant={viewMode === 'table' ? 'solid' : 'outline'}
+              borderRadius="lg"
+              _hover={{
+                bg: viewMode === 'table' ? 'blue.600' : 'gray.50'
+              }}
+            >
+              Table
+            </Button>
+            <Button
+              leftIcon={<IconCards size={16} />}
+              onClick={() => onViewModeChange('cards')}
+              colorScheme={viewMode === 'cards' ? 'blue' : 'gray'}
+              variant={viewMode === 'cards' ? 'solid' : 'outline'}
+              borderRadius="lg"
+              _hover={{
+                bg: viewMode === 'cards' ? 'blue.600' : 'gray.50'
+              }}
+            >
+              Cards
+            </Button>
+          </ButtonGroup>
+        </Box>
+      </Flex>
+    </Box>
+  );
+};
+
 const Market: React.FC = () => {
     const toast = useToast();
       
@@ -273,6 +361,8 @@ const Market: React.FC = () => {
     const [error, setError] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -303,15 +393,26 @@ const Market: React.FC = () => {
 
     const navigate = useNavigate();
 
-    // 🚀 PERFORMANCE: Memoized pagination calculations
+    // 🚀 PERFORMANCE: Memoized filtered stocks
+    const filteredStocks = useMemo(() => {
+      if (!searchTerm.trim()) return stocks;
+      
+      const searchLower = searchTerm.toLowerCase();
+      return stocks.filter(stock => 
+        stock.symbol.toLowerCase().includes(searchLower) ||
+        stock.companyName.toLowerCase().includes(searchLower)
+      );
+    }, [stocks, searchTerm]);
+
+    // 🚀 PERFORMANCE: Memoized pagination calculations with filtered data
     const { totalPages, startIndex, endIndex, currentStocks } = useMemo(() => {
-      const totalPages = Math.ceil(stocks.length / pageSize);
+      const totalPages = Math.ceil(filteredStocks.length / pageSize);
       const startIndex = (currentPage - 1) * pageSize;
       const endIndex = startIndex + pageSize;
-      const currentStocks = stocks.slice(startIndex, endIndex);
+      const currentStocks = filteredStocks.slice(startIndex, endIndex);
       
       return { totalPages, startIndex, endIndex, currentStocks };
-    }, [stocks, currentPage, pageSize]);
+    }, [filteredStocks, currentPage, pageSize]);
 
     // 🚀 PERFORMANCE: Memoized event handlers
     const handlePageChange = useCallback((page: number) => {
@@ -326,6 +427,16 @@ const Market: React.FC = () => {
     const handleNavigate = useCallback((symbol: string) => {
       navigate(`/stock/${symbol}`);
     }, [navigate]);
+
+    // 🚀 NEW: Search and view mode handlers
+    const handleSearchChange = useCallback((value: string) => {
+      setSearchTerm(value);
+      setCurrentPage(1); // Reset to first page when searching
+    }, []);
+
+    const handleViewModeChange = useCallback((mode: 'table' | 'cards') => {
+      setViewMode(mode);
+    }, []);
 
     // 🚀 PERFORMANCE: Memoized page numbers calculation
     const pageNumbers = useMemo(() => {
@@ -378,6 +489,13 @@ const Market: React.FC = () => {
             <TopGainersCard stocks={stocks} />
           </Box>
 
+          <StockSearchAndFilters
+            searchTerm={searchTerm}
+            onSearchChange={handleSearchChange}
+            viewMode={viewMode}
+            onViewModeChange={handleViewModeChange}
+          />
+
           <Box 
             bg="white" 
             borderRadius="xl" 
@@ -398,59 +516,143 @@ const Market: React.FC = () => {
                 <Heading size="md" color="gray.700">Stock Market Data</Heading>
                 <Flex align="center" gap={4}>
                   <Text fontSize="sm" color="gray.600">
-                    Showing {startIndex + 1}-{Math.min(endIndex, stocks.length)} of {stocks.length} stocks
+                    Showing {startIndex + 1}-{Math.min(endIndex, filteredStocks.length)} of {filteredStocks.length} stocks
                   </Text>
                   <Badge colorScheme="green" variant="subtle">
-                    {stocks.length} Total
+                    {filteredStocks.length} Total
                   </Badge>
+                  {searchTerm && (
+                    <Badge colorScheme="blue" variant="subtle">
+                      Filtered
+                    </Badge>
+                  )}
                 </Flex>
               </Flex>
             </Box>
 
-            {/* Table */}
-            <Box overflowX="auto">
-              <Box as="table" w="full">
-                <Box as="thead">
-                  <Box as="tr" bg="gray.50">
-                    <Box as="th" px={6} py={4} textAlign="left" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
-                      Symbol
-                    </Box>
-                    <Box as="th" px={6} py={4} textAlign="left" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
-                      Company
-                    </Box>
-                    <Box as="th" px={6} py={4} textAlign="right" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
-                      Market Cap
-                    </Box>
-                    <Box as="th" px={6} py={4} textAlign="right" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
-                      Price
-                    </Box>
-                    <Box as="th" px={6} py={4} textAlign="right" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
-                      Change
-                    </Box>
-                    <Box as="th" px={6} py={4} textAlign="right" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
-                      % Change
-                    </Box>
-                    <Box as="th" px={6} py={4} textAlign="center" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
-                      Status
-                    </Box>
-                    <Box as="th" px={6} py={4} textAlign="center" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
-                      Action
+            {/* 🚀 NEW: Conditional rendering based on view mode */}
+            {viewMode === 'table' ? (
+              /* Table View */
+              <Box overflowX="auto">
+                <Box as="table" w="full">
+                  <Box as="thead">
+                    <Box as="tr" bg="gray.50">
+                      <Box as="th" px={6} py={4} textAlign="left" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                        Symbol
+                      </Box>
+                      <Box as="th" px={6} py={4} textAlign="left" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                        Company
+                      </Box>
+                      <Box as="th" px={6} py={4} textAlign="right" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                        Market Cap
+                      </Box>
+                      <Box as="th" px={6} py={4} textAlign="right" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                        Price
+                      </Box>
+                      <Box as="th" px={6} py={4} textAlign="right" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                        Change
+                      </Box>
+                      <Box as="th" px={6} py={4} textAlign="right" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                        % Change
+                      </Box>
+                      <Box as="th" px={6} py={4} textAlign="center" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                        Status
+                      </Box>
+                      <Box as="th" px={6} py={4} textAlign="center" fontWeight="bold" color="gray.700" borderBottom="1px solid" borderColor="gray.200">
+                        Action
+                      </Box>
                     </Box>
                   </Box>
-                </Box>
-                
-                <Box as="tbody">
-                  {currentStocks.map((stock, index) => (
-                    <StockTableRow
-                      key={`${stock.symbol}-${startIndex + index}`} // 🚀 PERFORMANCE: Stable keys
-                      stock={stock}
-                      index={startIndex + index}
-                      onNavigate={handleNavigate}
-                    />
-                  ))}
+                  
+                  <Box as="tbody">
+                    {currentStocks.map((stock, index) => (
+                      <StockTableRow
+                        key={`${stock.symbol}-${startIndex + index}`}
+                        stock={stock}
+                        index={startIndex + index}
+                        onNavigate={handleNavigate}
+                      />
+                    ))}
+                  </Box>
                 </Box>
               </Box>
-            </Box>
+            ) : (
+              /* Cards View */
+              <Box p={6}>
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 3, xl: 4 }} spacing={4}>
+                  {currentStocks.map((stock, index) => (
+                    <Box
+                      key={`${stock.symbol}-${startIndex + index}`}
+                      bg="white"
+                      p={4}
+                      borderRadius="lg"
+                      border="1px solid"
+                      borderColor="gray.200"
+                      cursor="pointer"
+                      transition="all 0.2s"
+                      _hover={{
+                        transform: "translateY(-2px)",
+                        boxShadow: "lg",
+                        borderColor: "blue.200"
+                      }}
+                      onClick={() => handleNavigate(stock.symbol)}
+                    >
+                      <Flex direction="column" gap={3}>
+                        {/* Stock Symbol */}
+                        <Flex justify="space-between" align="center">
+                          <Badge
+                            colorScheme={stock.deltaIndicator === 'up' ? 'green' : 'red'}
+                            variant="solid"
+                            fontSize="sm"
+                            fontWeight="bold"
+                          >
+                            {stock.symbol}
+                          </Badge>
+                          {getStockIcon(stock.deltaIndicator)}
+                        </Flex>
+
+                        {/* Company Name */}
+                        <Text
+                          fontSize="sm"
+                          fontWeight="medium"
+                          color="gray.700"
+                          noOfLines={2}
+                          lineHeight="1.2"
+                        >
+                          {stock.companyName}
+                        </Text>
+
+                        {/* Price and Change */}
+                        <Flex justify="space-between" align="center">
+                          <Text
+                            fontSize="lg"
+                            fontWeight="bold"
+                            color="gray.800"
+                          >
+                            ${stock.lastSalePrice}
+                          </Text>
+                          <Text
+                            fontSize="sm"
+                            fontWeight="bold"
+                            color={getStockColor(stock.deltaIndicator)}
+                          >
+                            {formatValue(stock.percentageChange)}
+                          </Text>
+                        </Flex>
+
+                        {/* Market Cap */}
+                        <Text
+                          fontSize="xs"
+                          color="gray.500"
+                        >
+                          {formatMarketCap(stock.marketCap)}
+                        </Text>
+                      </Flex>
+                    </Box>
+                  ))}
+                </SimpleGrid>
+              </Box>
+            )}
 
             {/* Pagination Controls */}
             <Box 
