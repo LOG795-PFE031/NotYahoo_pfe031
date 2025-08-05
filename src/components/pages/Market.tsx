@@ -129,6 +129,7 @@ const Market: React.FC = () => {
     cursor: 'pointer'
   };
 
+
   return (
     <Container style={{ justifyContent: "center", alignItems: 'center' }}>
       <table style={tableStyle}>
