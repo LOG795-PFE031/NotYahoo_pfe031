@@ -153,14 +153,6 @@ class ApiService {
   // Get stock prediction for a ticker
   async getStockPrediction(ticker: string, model_type: string): Promise<StockPrediction | null> {
     try {
-      // First check if the model exists
-      const modelExists = await this.checkModelExists(ticker, model_type);
-      if (!modelExists) {
-        console.log(`ApiService: Model ${model_type}_${ticker} does not exist, skipping prediction`);
-        return null;
-      }
-
-      // Ensure proper case: model type lowercase, ticker uppercase
       const normalizedModelType = model_type.toLowerCase();
       const normalizedTicker = ticker.toUpperCase();
 
@@ -169,19 +161,31 @@ class ApiService {
         symbol: normalizedTicker
       };
 
-      const response = await predictionServiceClient.post(`/api/predict`, data,
-        {
-          params: {
-            symbol: normalizedTicker,
-            model_type: normalizedModelType
-          },
-        }
-      );
+      const response = await predictionServiceClient.post(`/api/predict`, data, {
+        params: {
+          symbol: normalizedTicker,
+          model_type: normalizedModelType
+        },
+      });
 
+      console.log("Prediction response:", response);
       return response.data;
-    } catch (error) {
-      console.error(`Error fetching stock prediction for ${ticker}:`, error);
-      // Return no prediction if no models are available
+
+    } catch (error: any) {
+      if (error.response) {
+        const status = error.response.status;
+
+        if (status === 404) {
+          console.warn(`No model available for ${ticker}.`);
+        } else if (status === 422) {
+          console.warn(`Invalid request for ${ticker}.`);
+        } else {
+          console.error(`Server error (${status}) when fetching prediction for ${ticker}.`);
+        }
+      } else {
+        console.error(`Network or unexpected error when fetching prediction for ${ticker}:`, error);
+      }
+
       return null;
     }
   }
