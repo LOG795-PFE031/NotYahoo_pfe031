@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import TTLCache from '@isaacs/ttlcache';
 
 export interface SentimentScore {
   positive: number;
@@ -149,9 +150,22 @@ const dataServiceClient = createApiClient(
 
 const stockAIServiceClient = createApiClient('http://localhost:8000');
 
+// TTL caches for API calls
+const stockPredictionCache = new TTLCache<string, StockPrediction>({ttl: 5 * 60 * 1000, max: 101})
+const newsCache = new TTLCache<string, SentimentAnalysis[]>({ttl: 60 * 60 * 1000, max: 101})
+
 class ApiService {
   // Get stock prediction for a ticker
   async getStockPrediction(ticker: string, model_type: string): Promise<StockPrediction | null> {
+
+    const cacheKey = `${ticker}_${model_type}`;
+  
+    // Check cache before making an API call
+    const cachedPrediction = stockPredictionCache.get(cacheKey);
+    if (cachedPrediction) {
+      console.log(`✔️ Stock Prediction Cache hit for ${cacheKey}`);
+      return cachedPrediction;
+    }
     try {
       const normalizedModelType = model_type.toLowerCase();
       const normalizedTicker = ticker.toUpperCase();
@@ -169,7 +183,12 @@ class ApiService {
       });
 
       console.log("Prediction response:", response);
-      return response.data;
+
+      const stockPredictionData = response.data;
+      // Store response in cache
+      stockPredictionCache.set(cacheKey, stockPredictionData);
+
+      return stockPredictionData;
 
     } catch (error: any) {
       if (error.response) {
@@ -192,6 +211,13 @@ class ApiService {
 
   // Get sentiment analysis for a ticker
   async getSentimentAnalysis(ticker: string): Promise<SentimentAnalysis[]> {
+
+    // Check cache before making an API call
+    const cachedNews = newsCache.get(ticker);
+    if (cachedNews) {
+      console.log(`✔️ News Cache hit for ${ticker}`);
+      return cachedNews;
+    }
 
     try {
       const response = await this.getNewsData(ticker);
