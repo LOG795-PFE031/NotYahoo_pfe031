@@ -54,63 +54,56 @@ const StockDetails: React.FC = () => {
   const [model, setModel] = useState('lstm');
   const [allModelType, setAllModelType] = useState<string[]>([])
   
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!ticker) return;
-      
-      setLoading(true);
-      setError('');
-      
-      try {
-        // Fetch all possible model type
-        const listOfModelType = await apiService.getModelsTypes()
-        setAllModelType(listOfModelType.types)
-
-        const { startDate, endDate } = getBusinessDateRange();
-
-        // Fetch prediction data (will automatically check if model exists)
-        const predictionData = await apiService.getStockPrediction(ticker, model);
-        setPrediction(predictionData);
-        
-        // Fetch sentiment analysis
-        const sentimentAnalysis = await apiService.getSentimentAnalysis(ticker);
-        setSentimentData(sentimentAnalysis);
-        
-        // Fetch historical data
-        // const { startDate, endDate } = getBusinessDateRange();
-        // const currentData = await apiService.getStockDataHistory(ticker, startDate, endDate);
-        const currentData = await apiService.getStockData(ticker);
-
-        const historicalData = await apiService.getStockDataHistory(ticker, startDate, endDate);
-
-        const formattedHistoricalData = formatHistoricalData(historicalData.data);
-        setHistoricalData(formattedHistoricalData);
+useEffect(() => {
+  const fetchData = async () => {
+    if (!ticker) return;
     
-
-        // Set the company name from the response
-        setStockName(currentData.name);
-
-        // Get the first (and only) data point from the array
-        const currentStockData = currentData.data[0];
-        setCurrentData(currentStockData);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching stock data:', err);
-        setError('Failed to load stock data. Please try again later.');
-        setLoading(false);
-        
-        toast({
-          title: 'Error',
-          description: 'Failed to load stock data.',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
-      }
-    };
+    setLoading(true);
+    setError('');
     
-    fetchData();
-  }, [ticker, toast]);
+    try {
+      // These can run in parallel since they don't depend on each other
+      const [modelsResponse, { startDate, endDate }] = await Promise.all([
+        apiService.getModelsTypes(),
+        getBusinessDateRange(),
+      ]);
+      
+      setAllModelType(modelsResponse.types);
+
+      // These API calls can also run in parallel
+      const [predictionData, sentimentAnalysis, currentData, historicalData] = await Promise.all([
+        apiService.getStockPrediction(ticker, model),
+        apiService.getSentimentAnalysis(ticker),
+        apiService.getStockData(ticker),
+        apiService.getStockDataHistory(ticker, startDate, endDate),
+      ]);
+
+      // Update state with all the results
+      setPrediction(predictionData);
+      setSentimentData(sentimentAnalysis);
+      
+      const formattedHistoricalData = formatHistoricalData(historicalData.data);
+      setHistoricalData(formattedHistoricalData);
+      setStockName(currentData.name);
+      setCurrentData(currentData.data[0]);
+      
+    } catch (err) {
+      console.error('Error fetching stock data:', err);
+      setError('Failed to load stock data. Please try again later.');
+      toast({
+        title: 'Error',
+        description: 'Failed to load stock data.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  fetchData();
+}, [ticker, model, toast]);
   
   // Helper to format the historical data into the correct format
   const formatHistoricalData = (rawHistoricalData: StockData[]) => {
