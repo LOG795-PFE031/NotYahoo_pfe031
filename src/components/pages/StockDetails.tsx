@@ -322,7 +322,17 @@ useEffect(() => {
               {prediction ? (
                 <Stat>
                   <StatLabel fontSize="md">Next trading day's predicted price</StatLabel>
-                  <StatNumber fontSize="3xl">${prediction.predicted_price.toFixed(2)}</StatNumber>
+                  <StatNumber 
+                    fontSize="3xl"
+                    color={
+                      !currentData || currentData.Close == null
+                        ? 'gray.500'
+                        : prediction.predicted_price > currentData.Close
+                        ? 'green.500'
+                        : 'red.500'
+                    }
+                    >${prediction.predicted_price.toFixed(2)}
+                  </StatNumber>
                   <StatHelpText>
                     <Flex align="center" justify="space-between">
                       <Text>Confidence: {(prediction.confidence * 100).toFixed(1)}%</Text>
