@@ -48,60 +48,62 @@ const StockDetails: React.FC = () => {
   const [prediction, setPrediction] = useState<StockPrediction | null>(null);
   const [sentimentData, setSentimentData] = useState<SentimentAnalysis[]>([]);
   const [historicalData, setHistoricalData] = useState<{date: string, price: number, volume:number}[]>([]);
+  const [currentData, setCurrentData] = useState<StockData | null>(null);
   const [stockName, setStockName] = useState<string>('');
   const [error, setError] = useState('');
   const [model, setModel] = useState('lstm');
-  const [allModelType, setAllModelType] = useState([])
+  const [allModelType, setAllModelType] = useState<string[]>([])
   
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!ticker) return;
-      
-      setLoading(true);
-      setError('');
-      
-      try {
-        // Fetch all possible model type
-        const listOfModelType = await apiService.getModelsTypes()
-        setAllModelType(listOfModelType.types)
-
-        // Fetch prediction data
-        const predictionData = await apiService.getStockPrediction(ticker, model);
-        setPrediction(predictionData);
-        
-        // Fetch sentiment analysis
-        const sentimentAnalysis = await apiService.getSentimentAnalysis(ticker);
-        setSentimentData(sentimentAnalysis);
-        
-        // Fetch historical data
-        const { startDate, endDate } = getBusinessDateRange();
-        const historicalData = await apiService.getStockDataHistory(ticker, startDate, endDate);
-
-        // Set the company name from the response
-        setStockName(historicalData.name);
-
-        // Set the historical data as before
-        const formattedHistoricalData = formatHistoricalData(historicalData.data);
-        setHistoricalData(formattedHistoricalData);
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching stock data:', err);
-        setError('Failed to load stock data. Please try again later.');
-        setLoading(false);
-        
-        toast({
-          title: 'Error',
-          description: 'Failed to load stock data.',
-          status: 'error',
-          duration: 5000,
-          isClosable: true,
-        });
-      }
-    };
+useEffect(() => {
+  const fetchData = async () => {
+    if (!ticker) return;
     
-    fetchData();
-  }, [ticker, toast]);
+    setLoading(true);
+    setError('');
+    
+    try {
+      // These can run in parallel since they don't depend on each other
+      const [modelsResponse, { startDate, endDate }] = await Promise.all([
+        apiService.getModelsTypes(),
+        getBusinessDateRange(),
+      ]);
+      
+      setAllModelType(modelsResponse.types);
+
+      // These API calls can also run in parallel
+      const [predictionData, sentimentAnalysis, currentData, historicalData] = await Promise.all([
+        apiService.getStockPrediction(ticker, model),
+        apiService.getSentimentAnalysis(ticker),
+        apiService.getStockData(ticker),
+        apiService.getStockDataHistory(ticker, startDate, endDate),
+      ]);
+
+      // Update state with all the results
+      setPrediction(predictionData);
+      setSentimentData(sentimentAnalysis);
+      
+      const formattedHistoricalData = formatHistoricalData(historicalData.data);
+      setHistoricalData(formattedHistoricalData);
+      setStockName(currentData.name);
+      setCurrentData(currentData.data[0]);
+      
+    } catch (err) {
+      console.error('Error fetching stock data:', err);
+      setError('Failed to load stock data. Please try again later.');
+      toast({
+        title: 'Error',
+        description: 'Failed to load stock data.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  fetchData();
+}, [ticker, model, toast]);
   
   // Helper to format the historical data into the correct format
   const formatHistoricalData = (rawHistoricalData: StockData[]) => {
@@ -174,6 +176,22 @@ const StockDetails: React.FC = () => {
     
     try {
       if (!ticker) throw new Error('Ticker is undefined');
+      
+      // Check if the model exists before attempting prediction
+      const modelExists = await apiService.checkModelExists(ticker, model_type);
+      if (!modelExists) {
+        console.log(`StockDetails: Model ${model_type}_${ticker} does not exist`);
+        setPrediction(null);
+        toast({
+          title: 'Model Not Available',
+          description: `No trained model found for ${ticker} with ${model_type}. Please train the model first.`,
+          status: 'warning',
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+      
       const dataPredict = await apiService.getStockPrediction(ticker, model_type);
       setPrediction(dataPredict);
     } catch (err) {
@@ -276,7 +294,7 @@ const StockDetails: React.FC = () => {
               <Stat>
                 <StatLabel fontSize="md">Last traded price</StatLabel>
                 <StatNumber fontSize="3xl">
-                  ${historicalData.length > 0 ? historicalData[historicalData.length - 1].price.toFixed(2) : 'N/A'}
+                  ${currentData ? currentData.Close.toFixed(2) : 'N/A'}
                 </StatNumber>
                 <StatHelpText>
                   {(() => {
@@ -304,7 +322,17 @@ const StockDetails: React.FC = () => {
               {prediction ? (
                 <Stat>
                   <StatLabel fontSize="md">Next trading day's predicted price</StatLabel>
-                  <StatNumber fontSize="3xl">${prediction.predicted_price.toFixed(2)}</StatNumber>
+                  <StatNumber 
+                    fontSize="3xl"
+                    color={
+                      !currentData || currentData.Close == null
+                        ? 'gray.500'
+                        : prediction.predicted_price > currentData.Close
+                        ? 'green.500'
+                        : 'red.500'
+                    }
+                    >${prediction.predicted_price.toFixed(2)}
+                  </StatNumber>
                   <StatHelpText>
                     <Flex align="center" justify="space-between">
                       <Text>Confidence: {(prediction.confidence * 100).toFixed(1)}%</Text>

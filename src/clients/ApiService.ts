@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import TTLCache from '@isaacs/ttlcache';
 
 export interface SentimentScore {
   positive: number;
@@ -56,6 +57,19 @@ export interface StockDataHistory {
 }
 
 export interface StockDataHistoryResponse {
+  symbol: string;
+  name: string;
+  data: StockData[];
+  meta: {
+    message: string;
+    version: string;
+    documentation: string;
+    endpoints: string[];
+  };
+  timestamp: string;
+}
+
+export interface StockDataResponse {
   symbol: string;
   name: string;
   data: StockData[];
@@ -136,36 +150,74 @@ const dataServiceClient = createApiClient(
 
 const stockAIServiceClient = createApiClient('http://localhost:8000');
 
+// TTL caches for API calls
+const stockPredictionCache = new TTLCache<string, StockPrediction>({ttl: 5 * 60 * 1000, max: 101})
+const newsCache = new TTLCache<string, SentimentAnalysis[]>({ttl: 60 * 60 * 1000, max: 101})
+
 class ApiService {
   // Get stock prediction for a ticker
   async getStockPrediction(ticker: string, model_type: string): Promise<StockPrediction | null> {
+
+    const cacheKey = `${ticker}_${model_type}`;
+  
+    // Check cache before making an API call
+    const cachedPrediction = stockPredictionCache.get(cacheKey);
+    if (cachedPrediction) {
+      console.log(`✔️ Stock Prediction Cache hit for ${cacheKey}`);
+      return cachedPrediction;
+    }
     try {
+      const normalizedModelType = model_type.toLowerCase();
+      const normalizedTicker = ticker.toUpperCase();
 
       const data = {
-        model_type: model_type,
-        symbol: ticker
+        model_type: normalizedModelType,
+        symbol: normalizedTicker
       };
 
-      const response = await predictionServiceClient.post(`/api/predict`, data,
+      const response = await predictionServiceClient.post(`/api/predict`, data, {
+        params: {
+          symbol: normalizedTicker,
+          model_type: normalizedModelType
+        },
+      });
 
-        {
-          params: {
-            symbol: ticker,
-            model_type: model_type
-          },
+      console.log("Prediction response:", response);
+
+      const stockPredictionData = response.data;
+      // Store response in cache
+      stockPredictionCache.set(cacheKey, stockPredictionData);
+
+      return stockPredictionData;
+
+    } catch (error: any) {
+      if (error.response) {
+        const status = error.response.status;
+
+        if (status === 404) {
+          console.warn(`No model available for ${ticker}.`);
+        } else if (status === 422) {
+          console.warn(`Invalid request for ${ticker}.`);
+        } else {
+          console.error(`Server error (${status}) when fetching prediction for ${ticker}.`);
         }
-      );
+      } else {
+        console.error(`Network or unexpected error when fetching prediction for ${ticker}:`, error);
+      }
 
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching stock prediction for ${ticker}:`, error);
-      // Return no prediction if no models are available
       return null;
     }
   }
 
   // Get sentiment analysis for a ticker
   async getSentimentAnalysis(ticker: string): Promise<SentimentAnalysis[]> {
+
+    // Check cache before making an API call
+    const cachedNews = newsCache.get(ticker);
+    if (cachedNews) {
+      console.log(`✔️ News Cache hit for ${ticker}`);
+      return cachedNews;
+    }
 
     try {
       const response = await this.getNewsData(ticker);
@@ -207,6 +259,32 @@ class ApiService {
     }
   }
 
+  async getStockData(ticker: string): Promise<StockDataResponse> {
+    try {
+      const url = `/api/data/stock/current`;
+      const response = await dataServiceClient.get<StockDataResponse>(url,{
+        params:{
+          symbol: ticker
+        }
+      });
+      return {
+        symbol: response.data.symbol,
+        name: response.data.name,
+        data: response.data.data,
+        meta: {
+          message: response.data.meta.message,
+          version: response.data.meta.version,
+          documentation: response.data.meta.documentation,
+          endpoints: response.data.meta.endpoints
+        },
+        timestamp: response.data.timestamp
+      };
+    } catch (error) {
+      console.error(`Error fetching stock data for ${ticker}:`, error);
+      throw error;
+    }
+  }
+
   // Fetch all model type
   async getModelsTypes() {
     try {
@@ -219,12 +297,37 @@ class ApiService {
     }
   }
 
+  // Check if a specific model exists for a ticker
+  async checkModelExists(ticker: string, modelType: string): Promise<boolean> {
+    try {
+      const url = `/api/models`;
+      const response = await stockAIServiceClient.get(url);
+      const models = response.data.models || [];
+      
+      // Ensure proper case: model type lowercase, ticker uppercase
+      const normalizedModelType = modelType.toLowerCase();
+      const normalizedTicker = ticker.toUpperCase();
+      const modelName = `${normalizedModelType}_${normalizedTicker}`;
+      
+      const modelExists = models.some((model: any) => 
+        model.name === modelName && 
+        model.latest_versions?.some((version: any) => version.status === 'READY')
+      );
+      
+      console.log(`ApiService: Looking for model ${modelName}, exists: ${modelExists}`);
+      return modelExists;
+    } catch (error) {
+      console.error(`Error checking if model exists for ${ticker}:`, error);
+      return false;
+    }
+  }
+
   // Fetch all stocks
   async getStocks(): Promise<Stock[]> {
     try {
       const url = `/api/data/stocks`;
-      const response = await stockAIServiceClient.get(url, { method: 'GET' });
-      return response.data;
+      const response = await stockAIServiceClient.get(url,{method:'GET'});
+      return response.data.data || response.data;
     } catch (error) {
       console.error(`Error fetching all stocks`, error);
       throw error;
@@ -234,9 +337,13 @@ class ApiService {
   // Fetch all stocks
   async trainStock(ticker: string, model_type: string): Promise<number> {
     try {
+      // Ensure proper case: model type lowercase, ticker uppercase
+      const normalizedModelType = model_type.toLowerCase();
+      const normalizedTicker = ticker.toUpperCase();
+      
       const url = `/api/train`;
       const response = await stockAIServiceClient.post(
-        `${url}?symbol=${ticker}&model_type=${model_type}`
+        `${url}?symbol=${normalizedTicker}&model_type=${normalizedModelType}`
       );
       return response.status;
     } catch (error) {
