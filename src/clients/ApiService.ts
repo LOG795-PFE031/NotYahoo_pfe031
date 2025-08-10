@@ -151,8 +151,9 @@ const dataServiceClient = createApiClient(
 const stockAIServiceClient = createApiClient('http://localhost:8000');
 
 // TTL caches for API calls
-const stockPredictionCache = new TTLCache<string, StockPrediction>({ttl: 5 * 60 * 1000, max: 101})
+const stockPredictionCache = new TTLCache<string, StockPrediction>({ttl: 60 * 60 * 1000, max: 101})
 const newsCache = new TTLCache<string, SentimentAnalysis[]>({ttl: 60 * 60 * 1000, max: 101})
+const stockHistoricalDataCache = new TTLCache<string, StockDataHistoryResponse>({ttl: 60 * 60 * 1000, max: 101})
 
 class ApiService {
   // Get stock prediction for a ticker
@@ -185,6 +186,7 @@ class ApiService {
       console.log("Prediction response:", response);
 
       const stockPredictionData = response.data;
+      
       // Store response in cache
       stockPredictionCache.set(cacheKey, stockPredictionData);
 
@@ -221,7 +223,9 @@ class ApiService {
 
     try {
       const response = await this.getNewsData(ticker);
-      return response.articles.map((article: NewsData) => ({
+
+      // Format the response result
+      const result = response.articles.map((article: NewsData) => ({
         url: article.url,
         title: article.title,
         ticker: ticker,
@@ -232,6 +236,11 @@ class ApiService {
           negative: article.opinion == -1 ? article.confidence : 0
         }
       }));
+
+      // Update cache
+      newsCache.set(ticker, result)
+
+      return result;
     } catch (error) {
       console.error(`ApiService: Failed to get sentiment analysis for ${ticker}:`, error);
       return []; // Return empty list on failure
@@ -241,6 +250,15 @@ class ApiService {
 
   // Fetch stock data
   async getStockDataHistory(ticker: string, start_date: string = "", end_date: string = ""): Promise<StockDataHistoryResponse> {
+
+
+    // Check cache before making an API call
+    const dataCache = stockHistoricalDataCache.get(`${start_date}_${end_date}_${ticker}`);
+    if (dataCache) {
+      console.log(`✔️ Stock historical data cache hit for ${ticker} from ${start_date} to ${end_date}`);
+      return dataCache;
+    }
+
     try {
       const url = `/api/data/stock/historical`;
 
@@ -251,6 +269,9 @@ class ApiService {
           end_date: end_date
         }
       });
+
+      // Update cache
+      stockHistoricalDataCache.set(`${start_date}_${end_date}_${ticker}`, response.data)
 
       return response.data;
     } catch (error) {
