@@ -156,10 +156,10 @@ const dataServiceClient = createApiClient(
 const stockAIServiceClient = createApiClient('http://localhost:8000');
 
 // TTL caches for API calls
-const stockPredictionCache = new TTLCache<string, StockPrediction>({ttl: 60 * 60 * 1000, max: 101})
+const stockPredictionCache = new TTLCache<string, StockPrediction>({ttl: 120 * 60 * 1000, max: 101})
 const stockHistoricalPredictionCache = new TTLCache<string, StockHistoricalPrediction>({ttl: 240 * 60 * 1000, max: 101})
-const newsCache = new TTLCache<string, SentimentAnalysis[]>({ttl: 60 * 60 * 1000, max: 101})
-const stockHistoricalDataCache = new TTLCache<string, StockDataHistoryResponse>({ttl: 60 * 60 * 1000, max: 101})
+const newsCache = new TTLCache<string, SentimentAnalysis[]>({ttl: 120 * 60 * 1000, max: 101})
+const stockHistoricalDataCache = new TTLCache<string, StockDataHistoryResponse>({ttl: 120 * 60 * 1000, max: 101})
 
 class ApiService {
   // Get stock prediction for a ticker
