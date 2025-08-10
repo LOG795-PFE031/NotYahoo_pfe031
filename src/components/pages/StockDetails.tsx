@@ -36,6 +36,7 @@ import {
   AreaChart,
   Area
 } from 'recharts';
+import PriceAreaChart from '../PriceAreaChart';
 import apiService, { StockPrediction, SentimentAnalysis, StockData } from '../../clients/ApiService';
 import { getBusinessDateRange } from '../../utils/dateUtils';
 
@@ -49,6 +50,7 @@ const StockDetails: React.FC = () => {
   const [sentimentData, setSentimentData] = useState<SentimentAnalysis[]>([]);
   const [historicalData, setHistoricalData] = useState<{date: string, price: number, volume:number}[]>([]);
   const [currentData, setCurrentData] = useState<StockData | null>(null);
+  const [predictedData, setPredictedData] = useState<{date: string, price: number}[]>([]);
   const [stockName, setStockName] = useState<string>('');
   const [error, setError] = useState('');
   const [model, setModel] = useState('lstm');
@@ -62,6 +64,8 @@ useEffect(() => {
     setError('');
     
     try {
+      setPredictedData([]);
+
       // These can run in parallel since they don't depend on each other
       const [modelsResponse, { startDate, endDate }] = await Promise.all([
         apiService.getModelsTypes(),
@@ -69,6 +73,25 @@ useEffect(() => {
       ]);
       
       setAllModelType(modelsResponse.types);
+
+      // Fire off the slow getStockHistoricalPrediction separately 
+      apiService.getStockHistoricalPrediction(
+        ticker,
+        model,
+        startDate,
+        endDate
+      ).then((result) => {
+        if (result) {
+          const predictionsData = result.predictions.map((pred) => ({
+            date: pred.date,
+            price: pred.predicted_price
+          }));
+          
+          setPredictedData(predictionsData); // Update state when done
+        }
+      }).catch((err) => {
+        console.error("Historical prediction failed:", err);
+      });
 
       // These API calls can also run in parallel
       const [predictionData, sentimentAnalysis, currentData, historicalData] = await Promise.all([
@@ -381,32 +404,7 @@ useEffect(() => {
         <TabPanels>
           {/* Price Chart */}
           <TabPanel>
-            <Box height="400px" mb={6}>
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={historicalData}
-                  margin={{
-                    top: 10,
-                    right: 30,
-                    left: 0,
-                    bottom: 0,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis domain={['auto', 'auto']} />
-                  <Tooltip />
-                  <Area 
-                    type="monotone" 
-                    dataKey="price" 
-                    stroke="#0066ff" 
-                    fill="#0066ff" 
-                    fillOpacity={0.2} 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </Box>
-            
+            <PriceAreaChart data={historicalData} predictedData={predictedData} />
             {prediction && (
               <Box p={4} borderWidth="1px" borderRadius="md" bg="blue.50">
                 <Heading size="sm" mb={2}>Price Prediction Insight</Heading>
