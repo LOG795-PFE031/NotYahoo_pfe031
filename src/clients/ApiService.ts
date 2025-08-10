@@ -23,6 +23,11 @@ export interface StockPrediction {
   model_type: string;
 }
 
+export interface StockHistoricalPrediction {
+  symbol: string;
+  predictions: StockPrediction[];
+}
+
 // Interface for individual stock data
 export interface StockData {
   Date: string;
@@ -152,6 +157,7 @@ const stockAIServiceClient = createApiClient('http://localhost:8000');
 
 // TTL caches for API calls
 const stockPredictionCache = new TTLCache<string, StockPrediction>({ttl: 60 * 60 * 1000, max: 101})
+const stockHistoricalPredictionCache = new TTLCache<string, StockHistoricalPrediction>({ttl: 240 * 60 * 1000, max: 101})
 const newsCache = new TTLCache<string, SentimentAnalysis[]>({ttl: 60 * 60 * 1000, max: 101})
 const stockHistoricalDataCache = new TTLCache<string, StockDataHistoryResponse>({ttl: 60 * 60 * 1000, max: 101})
 
@@ -205,6 +211,66 @@ class ApiService {
         }
       } else {
         console.error(`Network or unexpected error when fetching prediction for ${ticker}:`, error);
+      }
+
+      return null;
+    }
+  }
+
+  async getStockHistoricalPrediction(ticker: string, model_type: string, start_date: string = "", end_date: string = ""): Promise<StockHistoricalPrediction | null> {
+
+    const normalizedModelType = model_type.toLowerCase();
+    const normalizedTicker = ticker.toUpperCase();
+
+    const cacheKey = `${normalizedTicker}_${normalizedModelType}_${start_date}_${end_date}`;
+  
+    // Check cache before making an API call
+    const cachedPredictions = stockHistoricalPredictionCache.get(cacheKey);
+    if (cachedPredictions) {
+      console.log(`✔️ Stock Historical Prediction Cache hit for symbol ${ticker} and model type ${model_type} from ${start_date} to ${end_date}`);
+      return cachedPredictions;
+    }
+
+    try {
+      const data = {
+        model_type: normalizedModelType,
+        symbol: normalizedTicker,
+        start_date: start_date,
+        end_date: end_date
+      };
+
+      const response = await predictionServiceClient.post(`/api/predict/historical`, data, {
+        params: {
+          symbol: normalizedTicker,
+          model_type: normalizedModelType,
+          start_date: start_date,
+          end_date: end_date
+        },
+      });
+
+      console.log("Historical Predictions response:", response);
+
+      const stockHistoricalPredictionData = response.data;
+      
+      // Store response in cache
+      stockHistoricalPredictionCache.set(cacheKey, stockHistoricalPredictionData);
+
+      return stockHistoricalPredictionData;
+
+    } catch (error: any) {
+      if (error.response) {
+        const status = error.response.status;
+
+        if (status === 404) {
+          console.warn(`No model available for ${ticker}.`);
+        } else if (status === 422) {
+          console.warn(`Invalid request for ${ticker}.`);
+        } else {
+          console.error(`Server error (${status}) when fetching prediction for symbol ${ticker} and model type ${model_type} from ${start_date} to ${end_date}.`);
+        }
+      } else {
+        console.error(`Network or unexpected error when fetching prediction for symbol ${ticker} 
+          and model type ${model_type} from ${start_date} to ${end_date}:`, error);
       }
 
       return null;
