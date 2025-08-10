@@ -183,6 +183,9 @@ const News: React.FC<params> = ({ searchTerm, isLoggedIn }) => {
         confidence: article.confidence || 0
       }));
 
+      setNewsData(newData);
+      setCurrentTicker(ticker);
+
       console.log(`Transformed data for ${currentTicker}:`, newData);
 
       // Get sentiment metrics if available
@@ -204,8 +207,7 @@ const News: React.FC<params> = ({ searchTerm, isLoggedIn }) => {
         metrics: metrics || undefined
       };
 
-      setNewsData(newData);
-      setCurrentTicker(ticker);
+      
       
       setLoading(false)
     }
