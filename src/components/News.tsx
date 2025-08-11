@@ -50,11 +50,14 @@ const News: React.FC<params> = ({ searchTerm, isLoggedIn }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [currentTicker, setCurrentTicker] = useState<string>(searchTerm);
+  const [searchInput, setSearchInput] = useState<string>(searchTerm);
   const [sentimentMetrics, setSentimentMetrics] = useState<{ positive: number, negative: number, neutral: number } | null>(null);
   const [stocks, setStocks] = useState<Stock[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+  const [filteredStocks, setFilteredStocks] = useState<Stock[]>([]);
 
   useEffect(() => {
-    const allStocks = async () => {
+    const loadStocks = async () => {
       const allStocks = localStorage.getItem('nasdaqStocks');
       if (allStocks) {
         const stocksList: Stock[] = JSON.parse(allStocks)
@@ -65,20 +68,27 @@ const News: React.FC<params> = ({ searchTerm, isLoggedIn }) => {
         })
         setStocks(stocksList);
         setCurrentTicker(stocksList[0].symbol)
+        setSearchInput(stocksList[0].symbol)
       }
       else {
-        const stocksData = await apiService.getStocks();
-        stocksData.data.sort((a, b) => {
-          if (a.symbol < b.symbol) return -1;
-          else if (a.symbol > b.symbol) return 1;
-          return 0
-        })
-        setStocks(stocksData.data)
-        setCurrentTicker(stocksData.data[0].symbol)
-        localStorage.setItem('nasdaqStocks', JSON.stringify(stocksData.data));
+        try {
+          const stocksData = await apiService.getStocks();
+          stocksData.sort((a: Stock, b: Stock) => {
+            if (a.symbol < b.symbol) return -1;
+            else if (a.symbol > b.symbol) return 1;
+            return 0
+          })
+          setStocks(stocksData)
+          setCurrentTicker(stocksData[0].symbol)
+          setSearchInput(stocksData[0].symbol)
+          localStorage.setItem('nasdaqStocks', JSON.stringify(stocksData));
+        } catch (error) {
+          console.error("Failed to load stocks:", error);
+          setError("Failed to load stocks. Please try again later.");
+        }
       }
     }
-    allStocks()
+    loadStocks()
   }, []);
 
   useEffect(() => {
@@ -160,17 +170,46 @@ const News: React.FC<params> = ({ searchTerm, isLoggedIn }) => {
     fetchData();
   }, [currentTicker]);
 
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toUpperCase();
+    setSearchInput(value);
+    
+    // Filter stocks based on search input
+    if (value.trim() !== '') {
+      const filtered = stocks.filter(stock => 
+        stock.symbol.includes(value) || 
+        stock.companyName.toUpperCase().includes(value)
+      );
+      setFilteredStocks(filtered.slice(0, 5)); // Limit to 5 suggestions
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSelectStock = (symbol: string) => {
+    setSearchInput(symbol);
+    setCurrentTicker(symbol);
+    setShowSuggestions(false);
+    updateStockSelected(symbol);
+  };
+
   const updateStockSelected = async (ticker: string) => {
     setLoading(true)
     try {
+      // Validate if ticker exists in stocks array
+      const isValidTicker = stocks.some(stock => stock.symbol === ticker);
+      if (!isValidTicker) {
+        throw new Error(`Invalid stock symbol: ${ticker}`);
+      }
 
-      // Otherwise fetch new data from the API service
-      const response = await apiService.getNewsData(currentTicker);
-      console.log(`API Response for ${currentTicker}:`, response);
+      // Fetch news data from the API service
+      const response = await apiService.getNewsData(ticker);
+      console.log(`API Response for ${ticker}:`, response);
 
       // Transform the data to match our NewsData type
       if (!response.articles || !Array.isArray(response.articles)) {
-        console.error(`Invalid response format for ${currentTicker}:`, response);
+        console.error(`Invalid response format for ${ticker}:`, response);
         throw new Error('Invalid response format: missing articles array');
       }
 
@@ -185,8 +224,9 @@ const News: React.FC<params> = ({ searchTerm, isLoggedIn }) => {
 
       setNewsData(newData);
       setCurrentTicker(ticker);
+      setSearchInput(ticker);
 
-      console.log(`Transformed data for ${currentTicker}:`, newData);
+      console.log(`Transformed data for ${ticker}:`, newData);
 
       // Get sentiment metrics if available
       const metrics = response.sentiment_metrics ? {
@@ -201,7 +241,7 @@ const News: React.FC<params> = ({ searchTerm, isLoggedIn }) => {
 
       const now = Date.now();
       // Update cache
-      newsCache[currentTicker] = {
+      newsCache[ticker] = {
         data: newData,
         timestamp: now,
         metrics: metrics || undefined
@@ -212,11 +252,11 @@ const News: React.FC<params> = ({ searchTerm, isLoggedIn }) => {
       setLoading(false)
     }
     catch (error) {
-      console.error(`Error fetching news for ${currentTicker}:`, error);
+      console.error(`Error fetching news for ${ticker}:`, error);
       if (error instanceof Error) {
         setError(`Failed to fetch news data: ${error.message}`);
       } else {
-        setError(`Failed to fetch news data for ${currentTicker}. Please try again later.`);
+        setError(`Failed to fetch news data for ${ticker}. Please try again later.`);
       }
       setNewsData([]);
       setLoading(false)
@@ -254,15 +294,69 @@ const News: React.FC<params> = ({ searchTerm, isLoggedIn }) => {
             Latest News for {currentTicker}
           </Heading>
 
-          {/* Ticker selection */}
-          <Flex wrap="wrap" gap={2}>
-            <select value={currentTicker} style={{ backgroundColor: 'DeepSkyBlue', width: '150px', borderRadius: '15px' }} onChange={(type) => updateStockSelected(type.target.value)}>
-              {stocks.map((stock, index) => (
-                <option key={index} value={stock.symbol}>
-                  {stock.symbol}
-                </option>
-              ))}
-            </select>
+          {/* Ticker search */}
+          <Flex wrap="wrap" gap={2} align="center">
+            <Box position="relative" width="250px">
+              <input
+                type="text"
+                placeholder="Search stock symbol..."
+                value={searchInput}
+                onChange={handleSearchInputChange}
+                style={{ 
+                  width: '100%', 
+                  padding: '8px 12px',
+                  borderRadius: '15px',
+                  border: '1px solid #e2e8f0',
+                  fontSize: '14px'
+                }}
+              />
+              <Button
+                size="sm"
+                colorScheme="blue"
+                ml={2}
+                onClick={() => searchInput && handleSelectStock(searchInput)}
+                style={{
+                  position: 'absolute',
+                  right: '4px',
+                  top: '4px',
+                  zIndex: 2,
+                  borderRadius: '12px',
+                  padding: '0 12px',
+                  height: '28px'
+                }}
+              >
+                Search
+              </Button>
+              
+              {/* Suggestions dropdown */}
+              {showSuggestions && filteredStocks.length > 0 && (
+                <Box
+                  position="absolute"
+                  top="40px"
+                  left="0"
+                  width="100%"
+                  bg="white"
+                  borderRadius="md"
+                  boxShadow="md"
+                  zIndex="10"
+                  maxHeight="200px"
+                  overflowY="auto"
+                >
+                  {filteredStocks.map((stock) => (
+                    <Box
+                      key={stock.symbol}
+                      p={2}
+                      _hover={{ bg: "gray.100" }}
+                      cursor="pointer"
+                      onClick={() => handleSelectStock(stock.symbol)}
+                    >
+                      <Text fontWeight="bold">{stock.symbol}</Text>
+                      <Text fontSize="xs" color="gray.600">{stock.companyName}</Text>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </Box>
           </Flex>
         </Flex>
 
