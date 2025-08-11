@@ -68,14 +68,14 @@ const News: React.FC<params> = ({ searchTerm, isLoggedIn }) => {
       }
       else {
         const stocksData = await apiService.getStocks();
-        stocksData.data.sort((a, b) => {
+        stocksData.sort((a, b) => {
           if (a.symbol < b.symbol) return -1;
           else if (a.symbol > b.symbol) return 1;
           return 0
         })
-        setStocks(stocksData.data)
-        setCurrentTicker(stocksData.data[0].symbol)
-        localStorage.setItem('nasdaqStocks', JSON.stringify(stocksData.data));
+        setStocks(stocksData)
+        setCurrentTicker(stocksData[0].symbol)
+        localStorage.setItem('nasdaqStocks', JSON.stringify(stocksData));
       }
     }
     allStocks()
